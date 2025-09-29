@@ -1,0 +1,10 @@
+# Incluye todas las dependencias de producción
+-r requirements.txt
+
+# Dependencias específicas para testing
+pytest==8.4.2
+pytest-asyncio
+mongomock
+pytest-mock
+pydantic-settings==2.4.0
+aiosqlite==0.17.0

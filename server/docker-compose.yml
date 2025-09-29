@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: void_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    # Le decimos que busque el archivo .env en la misma carpeta
+    env_file:
+      - ./.env
+    restart: unless-stopped

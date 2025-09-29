@@ -1,0 +1,27 @@
+# Archivos de Entorno
+.env
+.env.*
+!.env.example
+
+# Entorno Virtual de Python
+.venv/
+
+# Bases de datos locales de prueba
+test.db
+*.sqlite3
+
+# Carpetas de cache de Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Dependencias del Frontend (¡esta carpeta es GIGANTE!)
+frontend/node_modules/
+
+# Archivos de build del frontend
+frontend/dist/
+
+# Archivos de logs y de IDEs
+.vscode/
+.idea/
+*.log
