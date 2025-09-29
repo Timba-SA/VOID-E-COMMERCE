@@ -170,6 +170,7 @@ async def update_product(
     color: Optional[str] = Form(None),
     # Gestión de imágenes
     images_to_delete: Optional[str] = Form(None), # URLs separadas por comas
+    image_order: Optional[str] = Form(None), # URLs separadas por comas en el orden deseado
     new_images: Optional[List[UploadFile]] = File(None)
 ):
     product_db = await db.get(Producto, product_id, options=[joinedload(Producto.variantes)])
@@ -208,6 +209,14 @@ async def update_product(
         
         new_image_urls = await cloudinary_service.upload_images(new_images)
         current_image_urls.extend(new_image_urls)
+
+    # 2c. Reordenar imágenes si se proporciona el orden
+    if image_order:
+        ordered_urls = [url.strip() for url in image_order.split(',')]
+        # Asegurarse de que todas las URLs ordenadas son válidas y están presentes
+        # Esto también añade las nuevas imágenes si no están en la lista de orden
+        final_urls = ordered_urls + [url for url in current_image_urls if url not in ordered_urls]
+        current_image_urls = final_urls
 
     product_db.urls_imagenes = current_image_urls
 
