@@ -4,6 +4,7 @@ venv/
 
 # Archivos de caché de Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 
@@ -16,6 +17,12 @@ __pycache__/
 
 # Archivo de variables de entorno (¡muy importante!)
 .env
+.env.*
+!.env.example
 
 # Archivos de logs
 *.log
+
+# Ignorar archivos de Git
+.git
+.gitignore

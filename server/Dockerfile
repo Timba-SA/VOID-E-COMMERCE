@@ -2,10 +2,10 @@
 #  ETAPA 1: El "Taller" o "Builder"
 #  Acá preparamos todo lo pesado.
 # =================================================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Variable de entorno para que Python no guarde logs en buffer.
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 # Seteamos el directorio de trabajo DENTRO del contenedor.
 WORKDIR /app
@@ -23,7 +23,7 @@ RUN pip install --upgrade pip && \
 # =================================================================
 FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Copiamos las dependencias pre-compiladas de la etapa 'builder'.
