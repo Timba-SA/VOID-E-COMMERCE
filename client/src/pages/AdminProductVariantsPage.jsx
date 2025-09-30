@@ -1,13 +1,12 @@
-// En FRONTEND/src/pages/AdminProductVariantsPage.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { getProductById } from '../api/productsApi'; // Usamos la pública para traer el producto
+import { addVariantAPI, deleteVariantAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
 const AdminProductVariantsPage = () => {
   const { productId } = useParams();
-  const { token } = useContext(AuthContext);
   const { notify } = useContext(NotificationContext);
 
   const [product, setProduct] = useState(null);
@@ -24,13 +23,11 @@ const AdminProductVariantsPage = () => {
   useEffect(() => {
     const fetchProductAndVariants = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/products/${productId}`);
-        if (!response.ok) throw new Error('No se pudo cargar el producto.');
-        const data = await response.json();
+        const data = await getProductById(productId);
         setProduct(data);
         setVariants(data.variantes || []);
       } catch (err) {
-        setError(err.message);
+        setError(err.detail || 'No se pudo cargar el producto y sus variantes.');
       } finally {
         setLoading(false);
       }
@@ -42,37 +39,19 @@ const AdminProductVariantsPage = () => {
     const { name, value, type } = e.target;
     setNewVariant(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value) || 0 : value
+      [name]: type === 'number' ? parseInt(value, 10) || 0 : value
     }));
   };
 
   const handleAddVariant = async (e) => {
     e.preventDefault();
-    setError('');
-
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/products/${productId}/variants`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newVariant)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'No se pudo crear la variante.');
-      }
-
-      const createdVariant = await response.json();
+      const createdVariant = await addVariantAPI(productId, newVariant);
       setVariants([...variants, createdVariant]);
       setNewVariant({ tamanio: '', color: '', cantidad_en_stock: 0 });
       notify('Variante agregada con éxito.', 'success');
-
     } catch (err) {
-      setError(err.message);
-      notify(`Error: ${err.message}`, 'error');
+      notify(`Error: ${err.detail || 'No se pudo crear la variante.'}`, 'error');
     }
   };
 
@@ -81,33 +60,24 @@ const AdminProductVariantsPage = () => {
       return;
     }
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/admin/products/${productId}/variants/${variantId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'No se pudo eliminar la variante.');
-      }
+      await deleteVariantAPI(variantId);
       setVariants(variants.filter(v => v.id !== variantId));
       notify('Variante eliminada.', 'success');
     } catch (err) {
-      setError(err.message);
-      notify(`Error: ${err.message}`, 'error');
+      notify(`Error: ${err.detail || 'No se pudo eliminar la variante.'}`, 'error');
     }
   };
 
   if (loading) return <Spinner message="Cargando variantes..." />;
-  if (error) return <h2 className="error-message">Error: {error}</h2>;
 
   return (
     <div>
-      <Link to="/admin/products">&larr; Volver a Productos</Link>
-      <div className="admin-header">
+      <Link to="/admin/products" className="back-link">&larr; Volver a Productos</Link>
+      <div className="admin-header" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
         <h1>Gestionar Variantes de "{product?.nombre}"</h1>
       </div>
+
+      {error && <h2 className="error-message">{error}</h2>}
 
       <h3>Variantes Actuales</h3>
       <table className="admin-table">
@@ -128,7 +98,7 @@ const AdminProductVariantsPage = () => {
               <td>{variant.color}</td>
               <td>{variant.cantidad_en_stock}</td>
               <td className="actions-cell">
-                <button 
+                <button
                   className="action-btn delete"
                   onClick={() => handleDeleteVariant(variant.id)}
                 >
@@ -140,8 +110,8 @@ const AdminProductVariantsPage = () => {
         </tbody>
       </table>
 
-      <form onSubmit={handleAddVariant} className="admin-form" style={{marginTop: '2rem'}}>
-        <h3>Añadir Nueva Variante</h3>
+      <form onSubmit={handleAddVariant} className="admin-form" style={{marginTop: '3rem'}}>
+        <h3 style={{borderTop: '1px solid #eee', paddingTop: '2rem'}}>Añadir Nueva Variante</h3>
         <div className="form-grid">
             <div className="form-group">
                 <label htmlFor="tamanio">Talle</label>
@@ -153,7 +123,7 @@ const AdminProductVariantsPage = () => {
             </div>
             <div className="form-group">
                 <label htmlFor="cantidad_en_stock">Stock</label>
-                <input type="number" id="cantidad_en_stock" name="cantidad_en_stock" value={newVariant.cantidad_en_stock} onChange={handleNewVariantChange} required />
+                <input type="number" id="cantidad_en_stock" name="cantidad_en_stock" value={newVariant.cantidad_en_stock} onChange={handleNewVariantChange} required min="0" />
             </div>
         </div>
         <button type="submit" className="submit-btn">Añadir Variante</button>

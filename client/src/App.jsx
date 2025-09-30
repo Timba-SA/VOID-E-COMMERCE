@@ -1,4 +1,4 @@
-// timba-sa/e-commerce/E-COMMERCE-50c1d7d8a49ac0891dda9940c53fddb57630ff63/FRONTEND/src/App.jsx
+// client/src/App.jsx
 
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
@@ -13,7 +13,7 @@ import SearchModal from '@/components/common/SearchModal.jsx';
 import Chatbot from '@/components/common/Chatbot.jsx';
 import Spinner from '@/components/common/Spinner.jsx';
 
-// --- Páginas (lazy-loaded para mejor performance) ---
+// --- Páginas ---
 const HomePage = lazy(() => import('@/pages/HomePage.jsx'));
 const LoginPage = lazy(() => import('@/pages/LoginPage.jsx'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage.jsx'));
@@ -58,25 +58,36 @@ const AppContent = () => {
     checkAuth();
   }, [checkAuth]);
 
+  // --- ¡ACÁ ESTÁ LA SOLUCIÓN A PRUEBA DE F5! ---
   useEffect(() => {
-    if (isAdminRoute) return;
+    if (isAdminRoute) {
+      setLogoPosition(null);
+      return;
+    }
+
     const updatePosition = () => {
       if (logoRef.current) {
-        requestAnimationFrame(() => {
-          if (logoRef.current) {
-            setLogoPosition(logoRef.current.getBoundingClientRect());
-          }
-        });
+        const rect = logoRef.current.getBoundingClientRect();
+        // Solo guardamos la posición si el logo es visible
+        if (rect.width > 0 && rect.height > 0) {
+          setLogoPosition(rect);
+        }
       }
     };
-    updatePosition();
+
+    // Usamos un timeout para darle tiempo al navegador de renderizar todo después de un F5
+    const timer = setTimeout(updatePosition, 100);
+
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition);
+
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
     };
-  }, [isAdminRoute]);
+  }, [isAdminRoute, location.pathname]); // Lo ejecutamos cada vez que cambia la ruta
+
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const handleSetAddedItem = (item) => setAddedItem(item);

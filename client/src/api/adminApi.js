@@ -34,6 +34,17 @@ export const getOrdersAPI = async () => {
   }
 };
 
+export const getOrderByIdAPI = async (orderId) => {
+  try {
+    const response = await axiosClient.get(`/admin/sales/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching order details:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+
 // --- Dashboard & Metrics ---
 
 export const getKpisAPI = async () => {
@@ -42,16 +53,6 @@ export const getKpisAPI = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching KPIs:', error.response?.data?.detail || error.message);
-    throw error.response?.data || error;
-  }
-};
-
-export const getProductMetricsAPI = async () => {
-  try {
-    const response = await axiosClient.get('/admin/metrics/products');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching product metrics:', error.response?.data?.detail || error.message);
     throw error.response?.data || error;
   }
 };
@@ -75,3 +76,36 @@ export const getExpensesByCategoryAPI = async () => {
     throw error.response?.data || error;
   }
 };
+
+// --- Product & Variant Management (¡ACÁ ESTÁ LO NUEVO!) ---
+export const getProductVariantsAPI = async (productId) => {
+  try {
+    // Usamos la API pública de productos para obtener el producto y sus variantes
+    const response = await axiosClient.get(`/products/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching variants:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+}
+
+export const addVariantAPI = async (productId, variantData) => {
+  try {
+    const response = await axiosClient.post(`/products/${productId}/variants`, variantData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding variant:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+}
+
+export const deleteVariantAPI = async (variantId) => {
+  try {
+    // Ojo que esta ruta puede variar según tu backend, la ajustamos si es necesario
+    const response = await axiosClient.delete(`/admin/products/variants/${variantId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting variant:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+}

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getCategories } from '../../api/categoriesApi'; // Asegurate que esta ruta esté bien
+import { getCategories } from '../../api/categoriesApi';
 
-// Nuestra única fuente de verdad para las categorías de hombre.
 const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
 const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
@@ -17,48 +16,28 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
     const fetchAndOrganizeCategories = async () => {
       try {
         const allCategories = await getCategories();
-
-        // =======================================================================
-        // ACÁ ESTÁ LA CLAVE DE TODO, JUANI. ¡PRESTÁ ATENCIÓN A ESTA LÍNEA!
-        console.log('LO QUE LLEGA DE LA API ES ESTO:', allCategories);
-        // =======================================================================
-
-        // El código de abajo ASUME que `allCategories` es un array de objetos,
-        // y que cada objeto tiene una propiedad llamada "nombre".
-        // Si no es así, acá es donde todo falla.
-
         if (!Array.isArray(allCategories)) {
-          console.error("Error: getCategories no devolvió un array. Se recibió:", allCategories);
-          return; // Cortamos la ejecución si no es un array para evitar que rompa.
+          console.error("Error: getCategories no devolvió un array.");
+          return;
         }
 
         const menswear = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
         const womenswear = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
 
-        const formattedCategories = {
+        setCategories({
           womenswear: womenswear.map(c => ({ name: c.nombre.toUpperCase(), path: `/catalog/${c.nombre.toLowerCase()}` })),
           menswear: menswear.map(c => ({ name: c.nombre.toUpperCase(), path: `/catalog/${c.nombre.toLowerCase()}` }))
-        };
-
-        setCategories(formattedCategories);
-
-        const pathSubCategory = location.pathname.split('/')[2];
-        if (pathSubCategory) {
-            const isMenswear = formattedCategories.menswear.some(c => c.path.includes(pathSubCategory));
-            setActiveCategory(isMenswear ? 'menswear' : 'womenswear');
-        } else {
-            setActiveCategory('menswear');
-        }
+        });
 
       } catch (error) {
-        console.error("Explotó la llamada a la API o el procesamiento de categorías:", error);
+        console.error("Falló la carga de categorías:", error);
       }
     };
 
     if (isOpen) {
         fetchAndOrganizeCategories();
     }
-  }, [isOpen, location.pathname]);
+  }, [isOpen]);
 
   const handleNavigateAndClose = (path) => {
     navigate(path);
@@ -73,18 +52,24 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
     }
   };
 
-  const phantomLogoStyle = logoPosition
-    ? {
-        position: 'fixed',
-        top: `${logoPosition.top}px`,
-        left: `${logoPosition.left}px`,
-        width: `${logoPosition.width}px`,
-        height: `${logoPosition.height}px`,
-        color: 'var(--text-color)',
-        zIndex: 2003,
-        pointerEvents: 'none',
-      }
-    : {};
+  const phantomLogoStyle = logoPosition ? {
+    position: 'fixed',
+    top: `${logoPosition.top}px`,
+    left: `${logoPosition.left}px`,
+    width: `${logoPosition.width}px`,
+    height: `${logoPosition.height}px`,
+    color: 'var(--text-color)',
+    fontFamily: 'var(--font-logo)',
+    fontSize: '60px',
+    fontWeight: '400',
+    letterSpacing: '0.05em',
+    lineHeight: '1',
+    zIndex: 2003,
+    pointerEvents: 'none',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  } : {};
 
   return (
     <>
@@ -92,7 +77,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
       
       <aside className={`dropdown-menu ${isOpen ? 'open' : ''}`}>
         {isOpen && logoPosition && (
-          <div className="logo" style={phantomLogoStyle}>
+          <div style={phantomLogoStyle}>
             VOID
           </div>
         )}
@@ -101,15 +86,13 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
           <button
             className={`close-btn ${isOpen ? 'open' : ''}`}
             aria-label="Cerrar menú"
-            aria-expanded={isOpen}
             onClick={onClose}
           >
-            <span></span>
-            <span></span>
-            <span></span>
+            <span/>
+            <span/>
+            <span/>
           </button>
-          
-          <Link to="/" className="logo dropdown-logo" onClick={onClose} style={{ visibility: 'hidden' }}>
+          <Link to="/" className="dropdown-logo" onClick={onClose} style={{ visibility: 'hidden' }}>
               VOID
           </Link>
         </div>

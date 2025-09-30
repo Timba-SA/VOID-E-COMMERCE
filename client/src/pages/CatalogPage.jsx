@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getProducts } from '../api/productsApi';
 import { getCategories } from '../api/categoriesApi';
 import FilterPanel from '@/components/common/FilterPanel.jsx';
 import Spinner from '@/components/common/Spinner.jsx';
 import ProductCard from '@/components/products/ProductCard.jsx';
 
-// 1. DEFINIMOS LAS CATEGORÍAS DE HOMBRE, IGUAL QUE EN EL MENÚ.
 const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
 const ProductCardSkeleton = () => (
@@ -26,6 +25,10 @@ const CatalogPage = () => {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isNextPageAvailable, setIsNextPageAvailable] = useState(true);
+
+    const PAGE_LIMIT = 12;
 
     const [filters, setFilters] = useState({
         talle: [],
@@ -34,39 +37,26 @@ const CatalogPage = () => {
         sort_by: 'nombre_asc',
         color: [],
         categoria_id: '',
-        skip: 0,
-        limit: 12,
     });
 
-    // 2. LÓGICA MEJORADA PARA MANEJAR "MENSWEAR" Y "WOMENSWEAR"
     useEffect(() => {
         const fetchCategoriesAndSetFilter = async () => {
             try {
                 const allCategories = await getCategories();
                 setCategories(allCategories);
-
+                let categoryIds = '';
                 if (categoryName) {
-                    let categoryIds = '';
-
                     if (categoryName.toLowerCase() === 'menswear') {
-                        const menswearCats = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
-                        categoryIds = menswearCats.map(c => c.id).join(',');
+                        categoryIds = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase())).map(c => c.id).join(',');
                     } else if (categoryName.toLowerCase() === 'womenswear') {
-                        const womenswearCats = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
-                        categoryIds = womenswearCats.map(c => c.id).join(',');
+                        categoryIds = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase())).map(c => c.id).join(',');
                     } else {
                         const currentCategory = allCategories.find(c => c.nombre.toLowerCase() === categoryName.toLowerCase());
-                        if (currentCategory) {
-                            categoryIds = currentCategory.id.toString();
-                        }
+                        if (currentCategory) categoryIds = currentCategory.id.toString();
                     }
-                    
-                    // Solo actualizamos si encontramos IDs, sino, queda vacío para mostrar todo
-                    setFilters(prev => ({ ...prev, categoria_id: categoryIds, skip: 0 }));
-                } else {
-                    // Si no hay categoryName, limpiamos el filtro para mostrar todos los productos
-                    setFilters(prev => ({ ...prev, categoria_id: '', skip: 0 }));
                 }
+                setFilters(prev => ({ ...prev, categoria_id: categoryIds }));
+                setCurrentPage(1);
             } catch (err) {
                 console.error("Failed to fetch categories", err);
             }
@@ -78,7 +68,11 @@ const CatalogPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const params = { ...filters };
+            const params = { 
+                ...filters,
+                skip: (currentPage - 1) * PAGE_LIMIT,
+                limit: PAGE_LIMIT
+            };
             
             if (params.talle.length > 0) params.talle = params.talle.join(',');
             else delete params.talle;
@@ -90,47 +84,47 @@ const CatalogPage = () => {
 
             const data = await getProducts(params);
             setProducts(Array.isArray(data) ? data : []);
+            setIsNextPageAvailable(data.length === PAGE_LIMIT);
         } catch (err) {
-            setError(err.message || 'Could not load products');
+            setError(err.message || 'No se pudieron cargar los productos.');
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, currentPage]);
 
     useEffect(() => {
-        // Solo fetcheamos si ya tenemos las categorías cargadas y el filtro de ID definido
-        if (categories.length > 0) {
-            fetchProducts();
-        }
+        fetchProducts();
         window.scrollTo(0, 0);
-    }, [fetchProducts, categories]);
-
-    useEffect(() => {
-        document.body.style.overflow = isFilterPanelOpen ? 'hidden' : 'auto';
-    }, [isFilterPanelOpen]);
+    }, [fetchProducts]);
 
     const handleFilterChange = (newFilters) => {
-        setFilters(prev => ({ ...prev, ...newFilters, skip: 0 }));
+        setFilters(prev => ({ ...prev, ...newFilters }));
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage < 1) return;
+        setCurrentPage(newPage);
     };
     
     const toggleFilterPanel = () => setIsFilterPanelOpen(!isFilterPanelOpen);
 
-    // 3. MEJORAMOS EL TÍTULO DE LA PÁGINA
     const getPageTitle = () => {
-        if (!categoryName) return 'CATALOG';
+        if (!categoryName) return 'ALL PRODUCTS';
         if (categoryName.toLowerCase() === 'menswear') return 'MENSWEAR';
         if (categoryName.toLowerCase() === 'womenswear') return 'WOMENSWEAR';
         return categoryName.replace('-', ' ').toUpperCase();
     };
+
+    // Placeholder para los números de página
+    const pageNumbers = [1, 2, 3, 4, 5]; 
 
     return (
         <>
             <main className="catalog-container">
                 <div className="catalog-header">
                     <h1 className="catalog-title">{getPageTitle()}</h1>
-                    <div className="catalog-controls">
-                        <button onClick={toggleFilterPanel} className="filters-link">FILTERS &gt;</button>
-                    </div>
+                    <button onClick={toggleFilterPanel} className="filters-link">FILTERS &gt;</button>
                 </div>
 
                 {isLoading ? (
@@ -141,11 +135,31 @@ const CatalogPage = () => {
                   <p className="loading-text">{error}</p>
                 ) : products.length > 0 ? (
                   <div className="catalog-product-grid">
-                      {products.map(product => <ProductCard product={product} key={product.id || product._id} />)}
+                      {products.map(product => <ProductCard product={product} key={product.id} />)}
                   </div>
                 ) : (
-                    <p className="loading-text">No products found with these filters.</p>
+                    <p className="loading-text">No se encontraron productos con estos filtros.</p>
                 )}
+
+                <div className="pagination-controls">
+                    <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-arrow">
+                        &lt; PREVIOUS
+                    </button>
+                    <div className="pagination-numbers">
+                        {pageNumbers.map(number => (
+                            <button 
+                                key={number}
+                                onClick={() => handlePageChange(number)}
+                                className={`pagination-number ${currentPage === number ? 'active' : ''}`}
+                            >
+                                {number}
+                            </button>
+                        ))}
+                    </div>
+                    <button onClick={() => handlePageChange(currentPage + 1)} disabled={!isNextPageAvailable} className="pagination-arrow">
+                        NEXT &gt;
+                    </button>
+                </div>
             </main>
             
             <div className={`filter-panel-overlay ${isFilterPanelOpen ? 'open' : ''}`} onClick={toggleFilterPanel} />
@@ -154,7 +168,6 @@ const CatalogPage = () => {
                 onClose={toggleFilterPanel} 
                 onFilterChange={handleFilterChange}
                 initialFilters={filters}
-                categories={categories}
             />
         </>
     );

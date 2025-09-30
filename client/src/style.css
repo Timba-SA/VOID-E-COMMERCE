@@ -301,7 +301,7 @@ main {
 .signup-text { font-size: 0.8rem; letter-spacing: 0.1em; color: #888; margin-bottom: 1.5rem; }
 
 /* --- Página del Carrito (Shopping Bag) --- */
-.cart-page-container { max-width: 850px; margin: 4rem auto; padding: 0 2rem; font-family: var(--font-nav); }
+.cart-page-container { max-width: 850px; margin: 4rem auto; padding: 0 2rem; }
 .cart-page-title { text-align: center; font-size: 1.1rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3rem; }
 .cart-content { width: 100%; }
 .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -323,8 +323,7 @@ main {
 .checkout-button { background-color: #000; color: #fff; border: 1px solid #000; padding: 1rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.15em; cursor: pointer; text-transform: uppercase; text-decoration: none; text-align: center; min-width: 200px; }
 .cart-empty-message { text-align: center; padding: 4rem 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
 
-
-/* --- Checkout (¡AHORA MÁS FACHERO!) --- */
+/* --- Checkout --- */
 .checkout-page-container { max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
 .checkout-title { font-size: 1.5rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; text-align: center; margin-bottom: 4rem; }
 .checkout-content { display: grid; grid-template-columns: 1.5fr 1fr; gap: 4rem; align-items: flex-start;}
@@ -343,8 +342,6 @@ main {
 .order-item-details .item-name { font-weight: 600; }
 .order-item-details .item-size { font-size: 0.85rem; color: #666; }
 .order-item .item-price { font-weight: 600; }
-.summary-line { padding-top: 1rem; border-top: 1px solid #eee; }
-.summary-line.total { border-top: 1px solid #000; font-weight: 700; font-size: 1.1rem; }
 .place-order-button { width: 100%; background-color: #000; color: #fff; border: 1px solid #000; padding: 1rem; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 2rem; }
 .place-order-button:hover:not(:disabled) { background-color: #fff; color: #000; }
 .place-order-button:disabled { background-color: #ccc; border-color: #ccc; cursor: not-allowed; }
@@ -363,20 +360,26 @@ main {
 .account-nav-link:hover, .account-nav-link.active { color: #000; font-weight: 700; }
 
 /* --- Admin --- */
-.admin-dashboard-container { display: flex; flex-grow: 1; width: 100%; background-color: #ffffff; }
+.admin-dashboard-container { display: flex; flex-grow: 1; width: 100%; background-color: #f8f9fa; }
 .admin-sidebar { flex: 0 0 240px; background-color: #000000; color: #fff; padding: 2rem; display: flex; flex-direction: column; }
 .admin-sidebar nav { flex-grow: 1; }
-.admin-sidebar nav a { display: block; padding: 0.75rem 0; color: #a0a0a0; font-weight: 500; text-decoration: none; letter-spacing: 0.05em; transition: color 0.2s ease; }
-.admin-sidebar nav a:hover, .admin-sidebar nav a.active { color: #fff; }
-.admin-content { flex-grow: 1; padding: 2rem 3rem; overflow-y: auto; }
-.admin-content h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; }
-.dashboard-widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-.widget { background: #fff; padding: 1.5rem; border: 1px solid #eee; }
-.widget h3 { margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 600; color: #888; text-transform: uppercase; }
+.admin-sidebar nav a { display: block; padding: 0.75rem 0; color: #a0a0a0; font-weight: 500; text-decoration: none; letter-spacing: 0.05em; transition: color 0.2s ease; border-left: 3px solid transparent; }
+.admin-sidebar nav a:hover { color: #fff; }
+.admin-sidebar nav a.active { color: #fff; border-left: 3px solid #fff; padding-left: calc(1rem - 3px); }
+.admin-sidebar .account-logout-btn { background: none; border: 1px solid #6c757d; color: #a0a0a0; margin-top: 2rem; }
+.admin-sidebar .account-logout-btn:hover { background-color: #fff; color: #000; border-color: #fff; }
+.admin-content { flex-grow: 1; padding: 2.5rem 3rem; overflow-y: auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #dee2e6; }
+.admin-content h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin: 0; }
+.dashboard-widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+.widget { background: #fff; padding: 1.5rem; border: 1px solid #e9ecef; border-radius: 4px; }
+.widget h3 { margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 600; color: #6c757d; text-transform: uppercase; }
 .widget-value { font-size: 2.2rem; font-weight: 700; color: #000; }
-.admin-table { width: 100%; border-collapse: collapse; background-color: #fff; border: 1px solid #eee; }
-.admin-table th, .admin-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
-.admin-table thead { background-color: #f9f9f9; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #555; }
+.admin-table { width: 100%; border-collapse: collapse; background-color: #fff; border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden; font-size: 0.9rem; }
+.admin-table th, .admin-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+.admin-table thead { background-color: #f8f9fa; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #495057; }
+.admin-table tbody tr:hover { background-color: #f8f9fa; }
+.admin-table .product-image-cell img { width: 45px; height: 60px; object-fit: contain; background: #fff; border: 1px solid #eee; }
 
 
 /* =================================================================== */
@@ -384,17 +387,52 @@ main {
 /* =================================================================== */
 
 /* --- Tarjetas de Producto --- */
-.product-card { overflow: hidden; aspect-ratio: 3 / 4; display: flex; justify-content: center; align-items: center; background-color: #f8f8f8; border: 1px solid #eee; }
-.product-card img { width: 100%; height: 100%; object-fit: contain; }
-.new-arrivals .product-card h3, .new-arrivals .product-card p { display: none; }
+.catalog-product-card {
+  text-align: left;
+}
+.catalog-product-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.catalog-product-image-container {
+  background-color: #f8f8f8;
+  border: 1px solid #eee;
+  margin-bottom: 1rem;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.catalog-product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+.catalog-product-card:hover .catalog-product-image {
+  transform: scale(1.03);
+}
+.catalog-product-info {
+  padding: 0.5rem 0.25rem 0;
+}
+.catalog-product-name {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0 0 0.25rem 0;
+  color: #222;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.catalog-product-price {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #555;
+  margin: 0;
+}
 
-.catalog-product-card { text-align: left; }
-.catalog-product-link { display: block; text-decoration: none; color: inherit; }
-.catalog-product-image-container { background-color: #f8f8f8; border: 1px solid #eee; margin-bottom: 1rem; aspect-ratio: 3 / 4; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.catalog-product-image { max-width: 100%; max-height: 100%; object-fit: contain; object-position: center; transition: transform 0.3s ease; }
-.catalog-product-info { padding: 0.5rem 0.25rem 0; text-align: left; }
-.catalog-product-name { font-size: 0.875rem; font-weight: 600; line-height: 1.4; margin: 0 0 0.25rem 0; color: #222; text-transform: uppercase; letter-spacing: 0.05em; }
-.catalog-product-price { font-size: 0.875rem; font-weight: 400; color: #555; margin: 0; }
 
 /* --- Selectores de Producto (Talle/Color) --- */
 .product-selector { margin-bottom: 2rem; }
@@ -421,6 +459,15 @@ main {
 
 .account-logout-btn { background: none; border: 1px solid #000; color: #000; padding: 0.9rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; margin-top: auto; transition: background-color 0.2s ease, color 0.2s ease; }
 .account-logout-btn:hover { background-color: #000; color: #fff; }
+
+.add-product-btn {
+  background-color: transparent; color: #000; border: 1px solid #000;
+  padding: 0.75rem 1.5rem; font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.1em; cursor: pointer; text-transform: uppercase;
+  text-decoration: none; transition: all 0.2s ease;
+}
+.add-product-btn:hover { background-color: #000; color: #fff; }
+
 
 /* --- Panel de Filtros y Botón --- */
 .filters-link {
@@ -481,22 +528,72 @@ main {
 
 /* --- Chatbot --- */
 .chatbot-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; }
-.chatbot-toggle-button { background-color: #000; color: #fff; border: none; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); transition: transform 0.2s ease-in-out, opacity 0.3s ease; padding: 0; opacity: 1; }
-.chatbot-toggle-button:hover { transform: scale(1.1); }
+.chatbot-toggle-button {
+    background-color: #000; border: none; width: 60px; height: 60px;
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease-in-out, opacity 0.3s ease; padding: 0; opacity: 1;
+}
+.chatbot-toggle-button:hover { transform: scale(1.1) rotate(-10deg); }
 .chatbot-logo-img { width: 32px; height: 32px; }
-.chatbot-window { position: absolute; bottom: 0; right: 0; width: 380px; height: 550px; background-color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; transform: translateY(20px); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s; }
-.chatbot-window.open { transform: translateY(0); opacity: 1; visibility: visible; }
-.chatbot-header { background-color: var(--header-bg); color: var(--text-color-inverse); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-.chatbot-header h3 { margin: 0; font-family: var(--font-logo); font-size: 2rem; font-weight: 400; line-height: 1; }
+.chatbot-window {
+    position: absolute; bottom: calc(100% + 1rem); right: 0;
+    width: 380px; height: 550px; background-color: #fff;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid #eee;
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(20px) scale(0.95); opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    transform-origin: bottom right;
+}
+.chatbot-window.open { transform: translateY(0) scale(1); opacity: 1; visibility: visible; }
+.chatbot-header {
+    background-color: var(--header-bg); color: var(--text-color-inverse);
+    padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+}
+.chatbot-header h3 {
+    margin: 0; font-family: var(--font-logo); font-size: 2rem;
+    font-weight: 400; line-height: 1;
+}
 .chatbot-close-btn { background: none; border: none; color: inherit; cursor: pointer; padding: 0; }
 .chatbot-messages { flex-grow: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
-.message-bubble { padding: 0.75rem 1rem; border-radius: 12px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; position: relative; }
-.message-bubble.bot { background-color: var(--header-bg); color: var(--text-color-inverse); align-self: flex-start; border-bottom-left-radius: 4px; }
-.message-bubble.user { background-color: #f0f0f0; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; }
-.chatbot-input-form { display: flex; align-items: center; padding: 1rem 1.5rem; flex-shrink: 0; }
+.message-bubble { padding: 0.75rem 1rem; border-radius: 12px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; position: relative; font-family: var(--font-nav); }
+.message-bubble::after {
+    content: ''; position: absolute; bottom: 0;
+    width: 0; height: 0; border: 10px solid transparent;
+}
+.message-bubble.bot {
+    background-color: var(--header-bg, #030324);
+    color: var(--text-color-inverse, #FFFFFF);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.message-bubble.bot::after {
+    left: -8px; border-right-color: var(--header-bg, #030324);
+    border-left: 0; border-bottom: 0; transform: translateY(-5px);
+}
+.message-bubble.user {
+    background-color: #f0f0f0;
+    color: #000;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.message-bubble.user::after {
+    right: -8px; border-left-color: #f0f0f0;
+    border-right: 0; border-bottom: 0; transform: translateY(-5px);
+}
+.chatbot-input-form { display: flex; align-items: center; padding: 1rem 1.5rem; flex-shrink: 0; border-top: 1px solid #f0f0f0; }
 .chatbot-input-form input { flex-grow: 1; border: none; border-bottom: 1px solid #000; padding: 0.5rem 0; font-size: 0.9rem; outline: none; background: transparent; }
+.chatbot-input-form input:focus { border-bottom-color: #555; }
 .chatbot-send-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; margin-left: 1rem; color: #000; font-weight: 600; letter-spacing: 0.1em; font-size: 0.8rem; }
 .chatbot-send-btn:disabled { color: #ccc; cursor: not-allowed; }
+.typing-indicator span { height: 8px; width: 8px; background-color: #ccc; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+.typing-indicator span:nth-of-type(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-of-type(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+
 
 /* --- Modales --- */
 .search-modal-overlay {
@@ -523,6 +620,52 @@ main {
 .toast.show { transform: translate(-50%, 0); }
 .toast.success { background-color: #28a745; }
 .toast.error { background-color: #dc3545; }
+
+/* --- Paginación --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 4rem;
+  font-family: var(--font-nav);
+}
+.pagination-arrow {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #000000;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+.pagination-arrow:hover:not(:disabled) {
+  color: #000;
+}
+.pagination-arrow:disabled {
+  color: #5f5f5f;
+  cursor: not-allowed;
+}
+.pagination-numbers {
+  display: flex;
+  gap: 1.5rem;
+}
+.pagination-number {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0;
+}
+.pagination-number.active {
+  color: #000;
+  text-decoration: underline;
+}
+
 
 /* =================================================================== */
 /* 8. MEDIA QUERIES (DISEÑO RESPONSIVO)

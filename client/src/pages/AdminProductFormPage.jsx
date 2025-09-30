@@ -1,62 +1,25 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getProductById, createProduct, updateProduct } from '../api/productsApi';
 import { getCategories } from '../api/categoriesApi';
+import { addVariantAPI, deleteVariantAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    rectSortingStrategy,
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 const SortableImage = ({ id, src, onRemove }) => {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-    } = useSortable({ id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        position: 'relative',
-        border: '1px solid #ddd',
-        padding: '5px',
-        touchAction: 'none',
-    };
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+    const style = { transform: CSS.Transform.toString(transform), transition, touchAction: 'none' };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <img src={src} alt="preview" width="80" height="80" style={{ objectFit: 'cover' }} />
-            <button
-                type="button"
-                onClick={() => onRemove(src)}
-                style={{
-                    position: 'absolute', top: '-10px', right: '-10px', background: 'red', color: 'white',
-                    border: 'none', borderRadius: '50%', width: '20px', height: '20px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}
-            >
-                X
-            </button>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="sortable-image-item">
+            <img src={src} alt="preview" />
+            <button type="button" onClick={() => onRemove(id)} className="remove-image-btn">×</button>
         </div>
     );
 };
-
 
 const AdminProductFormPage = () => {
     const { productId } = useParams();
@@ -66,28 +29,22 @@ const AdminProductFormPage = () => {
     const [productData, setProductData] = useState({
         nombre: '',
         descripcion: '',
-        precio: 0,
+        precio: '',
         sku: '',
-        stock: 0,
         categoria_id: '',
         material: '',
-        talle: '',
-        color: '',
     });
 
+    const [variants, setVariants] = useState([]);
+    const [newVariant, setNewVariant] = useState({ tamanio: '', color: '', cantidad_en_stock: '' });
+    
     const [categories, setCategories] = useState([]);
-    const [imageFiles, setImageFiles] = useState([]);
     const [visibleImages, setVisibleImages] = useState([]);
     const [imagesToDelete, setImagesToDelete] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const isEditing = Boolean(productId);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
+    const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -101,18 +58,16 @@ const AdminProductFormPage = () => {
                     setProductData({
                         nombre: productToEdit.nombre || '',
                         descripcion: productToEdit.descripcion || '',
-                        precio: productToEdit.precio || 0,
+                        precio: productToEdit.precio || '',
                         sku: productToEdit.sku || '',
-                        stock: productToEdit.stock || 0,
                         categoria_id: productToEdit.categoria_id || '',
                         material: productToEdit.material || '',
-                        talle: productToEdit.talle || '',
-                        color: productToEdit.color || '',
                     });
-                    setVisibleImages(productToEdit.urls_imagenes || []);
+                    setVariants(productToEdit.variantes || []);
+                    setVisibleImages(productToEdit.urls_imagenes?.map(url => ({ id: url, url })) || []);
                 }
             } catch (err) {
-                notify(err.message || 'Error loading data', 'error');
+                notify(err.message || 'Error cargando los datos', 'error');
             } finally {
                 setLoading(false);
             }
@@ -121,35 +76,80 @@ const AdminProductFormPage = () => {
     }, [productId, isEditing, notify]);
 
     const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        const parsedValue = name === 'categoria_id' ? parseInt(value, 10) :
-            type === 'number' ? parseFloat(value) || 0 : value;
-        setProductData(prev => ({ ...prev, [name]: parsedValue }));
+        const { name, value } = e.target;
+        setProductData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleNewVariantChange = (e) => {
+        const { name, value } = e.target;
+        setNewVariant(prev => ({ ...prev, [name]: value }));
     };
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (visibleImages.length + files.length > 3) {
-            notify('Un producto no puede tener más de 3 imágenes en total.', 'error');
+            notify('Un producto no puede tener más de 3 imágenes.', 'error');
             e.target.value = null;
             return;
         }
-        setImageFiles(files);
+
+        const newImageObjects = files.map(file => ({
+            id: `new-${file.name}-${Date.now()}`,
+            url: URL.createObjectURL(file),
+            file: file,
+        }));
+
+        setVisibleImages(prev => [...prev, ...newImageObjects]);
     };
 
-    const handleDeleteExistingImage = (imageUrl) => {
-        setImagesToDelete(prev => [...prev, imageUrl]);
-        setVisibleImages(prev => prev.filter(img => img !== imageUrl));
+    const handleDeleteImage = (idToRemove) => {
+        const imageToRemove = visibleImages.find(img => img.id === idToRemove);
+        if (!imageToRemove) return;
+
+        if (typeof imageToRemove.id === 'string' && !imageToRemove.url.startsWith('blob:')) {
+            setImagesToDelete(prev => [...prev, imageToRemove.url]);
+        }
+        
+        setVisibleImages(prev => prev.filter(img => img.id !== idToRemove));
     };
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
         if (active.id !== over.id) {
             setVisibleImages((items) => {
-                const oldIndex = items.indexOf(active.id);
-                const newIndex = items.indexOf(over.id);
+                const oldIndex = items.findIndex(item => item.id === active.id);
+                const newIndex = items.findIndex(item => item.id === over.id);
                 return arrayMove(items, oldIndex, newIndex);
             });
+        }
+    };
+
+    const handleAddVariant = async () => {
+        if (!newVariant.tamanio.trim() || !newVariant.color.trim() || !newVariant.cantidad_en_stock) {
+            notify('Completá todos los campos para añadir la variante.', 'error');
+            return;
+        }
+        try {
+            const createdVariant = await addVariantAPI(productId, {
+                ...newVariant,
+                cantidad_en_stock: Number(newVariant.cantidad_en_stock)
+            });
+            setVariants([...variants, createdVariant]);
+            setNewVariant({ tamanio: '', color: '', cantidad_en_stock: '' });
+            notify('Variante agregada con éxito.', 'success');
+        } catch (err) {
+            notify(err.detail || 'No se pudo crear la variante.', 'error');
+        }
+    };
+
+    const handleDeleteVariant = async (variantId) => {
+        if (!window.confirm('¿Seguro que querés borrar esta variante?')) return;
+        try {
+            await deleteVariantAPI(variantId);
+            setVariants(variants.filter(v => v.id !== variantId));
+            notify('Variante eliminada.', 'success');
+        } catch (err) {
+            notify(err.detail || 'No se pudo eliminar la variante.', 'error');
         }
     };
 
@@ -158,113 +158,160 @@ const AdminProductFormPage = () => {
         setLoading(true);
 
         const formData = new FormData();
-        for (const key in productData) {
-            if (productData[key] !== null && productData[key] !== '') {
-                formData.append(key, productData[key]);
-            }
-        }
+        Object.keys(productData).forEach(key => {
+            formData.append(key, productData[key]);
+        });
+        
+        formData.append('stock', 0);
+
+        const newImageFiles = visibleImages.filter(img => img.file).map(img => img.file);
 
         try {
             if (isEditing) {
-                if (imagesToDelete.length > 0) {
-                    formData.append('images_to_delete', imagesToDelete.join(','));
-                }
-                if (visibleImages.length > 0) {
-                    formData.append('image_order', visibleImages.join(','));
-                }
-                imageFiles.forEach(file => {
-                    formData.append('new_images', file);
-                });
+                if (imagesToDelete.length > 0) formData.append('images_to_delete', imagesToDelete.join(','));
+                
+                const orderedUrls = visibleImages.map(img => img.url).filter(url => !url.startsWith('blob:')).join(',');
+                formData.append('image_order', orderedUrls);
+                
+                newImageFiles.forEach(file => { formData.append('new_images', file); });
+
                 await updateProduct(productId, formData);
+                notify('Producto actualizado con éxito!', 'success');
+                navigate('/admin/products');
             } else {
-                if (imageFiles.length === 0) {
-                    notify('Debes subir al menos una imagen para crear el producto.', 'error');
-                    setLoading(false);
-                    return;
+                if (newImageFiles.length === 0) {
+                    notify('Debes subir al menos una imagen.', 'error'); setLoading(false); return;
                 }
-                imageFiles.forEach(file => {
-                    formData.append('images', file);
-                });
-                await createProduct(formData);
+                newImageFiles.forEach(file => { formData.append('images', file); });
+                const createdProduct = await createProduct(formData);
+                notify('Producto creado con éxito! Ahora podés añadirle talles y colores.', 'success');
+                navigate(`/admin/products/edit/${createdProduct.id}`);
             }
-            notify(`Producto ${isEditing ? 'actualizado' : 'creado'} con éxito!`, 'success');
-            navigate('/admin/products');
         } catch (err) {
-            const errorMessage = err.response?.data?.detail || 'Ocurrió un error al guardar el producto.';
-            notify(errorMessage, 'error');
-        } finally {
+            notify(err.response?.data?.detail || 'Error al guardar el producto.', 'error');
             setLoading(false);
         }
     };
 
-    if (loading && !categories.length) return <Spinner message="Cargando datos..." />;
+    if (loading) return <Spinner message="Cargando editor de producto..." />;
 
     return (
         <div>
-            <h1>{isEditing ? 'Editar Producto' : 'Añadir Nuevo Producto'}</h1>
+            <Link to="/admin/products" className="back-link">&larr; Volver a Productos</Link>
+            <div className="admin-header" style={{ justifyContent: 'center' }}>
+                <h1>{isEditing ? 'Editar Producto' : 'Añadir Nuevo Producto'}</h1>
+            </div>
+            
             <form onSubmit={handleSubmit} className="admin-form">
-                <div className="form-grid">
-                    {Object.keys(productData).map(key => (
-                        <div className="form-group" key={key}>
-                            <label htmlFor={key}>{key.replace(/_/g, ' ').toUpperCase()}</label>
-                            {key === 'categoria_id' ? (
-                                <select
-                                    id="categoria_id"
-                                    name="categoria_id"
-                                    value={productData.categoria_id}
-                                    onChange={handleChange}
-                                    required
-                                    style={{ width: '100%', padding: '0.5rem 0', background: 'none', border: 'none', borderBottom: '1px solid #000', fontSize: '1rem' }}
-                                >
-                                    <option value="" disabled>-- Seleccione una categoría --</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                <div className="form-section">
+                    <h3>Detalles del Producto</h3>
+                    <div className="form-grid">
+                         <div className="form-group">
+                            <label htmlFor="nombre">Nombre</label>
+                            <input type="text" id="nombre" name="nombre" value={productData.nombre} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="sku">SKU</label>
+                            <input type="text" id="sku" name="sku" value={productData.sku} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="precio">Precio</label>
+                            <input type="number" id="precio" name="precio" value={productData.precio} onChange={handleChange} required min="0" step="0.01" />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="categoria_id">Categoría</label>
+                            <select id="categoria_id" name="categoria_id" value={productData.categoria_id} onChange={handleChange} required>
+                                <option value="" disabled>-- Seleccione --</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group full-width">
+                            <label htmlFor="descripcion">Descripción</label>
+                            <textarea id="descripcion" name="descripcion" value={productData.descripcion} onChange={handleChange} rows="4"></textarea>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="material">Material</label>
+                            <input type="text" id="material" name="material" value={productData.material} onChange={handleChange} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="form-section">
+                    <h3>Imágenes (hasta 3, arrastra para ordenar)</h3>
+                    <div className="form-group">
+                        <label htmlFor="images" className="file-input-label">Añadir Imágenes</label>
+                        <input type="file" id="images" name="images" multiple accept="image/*" onChange={handleFileChange} className="file-input" />
+                    </div>
+                    
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={visibleImages.map(img => img.id)} strategy={rectSortingStrategy}>
+                            <div className="image-preview-grid">
+                                {visibleImages.map(img => (
+                                    <SortableImage key={img.id} id={img.id} src={img.url} onRemove={handleDeleteImage} />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </div>
+
+                {isEditing && (
+                    <div className="form-section">
+                        <h3>Variantes (Talles, Colores y Stock)</h3>
+                        {variants.length > 0 && (
+                            <table className="admin-table variants-table">
+                                <thead>
+                                    <tr>
+                                        <th>Talle</th>
+                                        <th>Color</th>
+                                        <th>Stock</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {variants.map(variant => (
+                                        <tr key={variant.id}>
+                                            <td>{variant.tamanio}</td>
+                                            <td>{variant.color}</td>
+                                            <td>{variant.cantidad_en_stock}</td>
+                                            <td className="actions-cell">
+                                                <button type="button" className="action-btn delete" onClick={() => handleDeleteVariant(variant.id)}>Eliminar</button>
+                                            </td>
+                                        </tr>
                                     ))}
-                                </select>
-                            ) : (
-                                <input
-                                    type={['precio', 'stock'].includes(key) ? 'number' : 'text'}
-                                    id={key}
-                                    name={key}
-                                    value={productData[key]}
-                                    onChange={handleChange}
-                                    required={!['descripcion', 'material', 'talle', 'color'].includes(key)}
-                                />
-                            )}
+                                </tbody>
+                            </table>
+                        )}
+                        
+                        <div className="add-variant-form">
+                            <h4>Añadir Nueva Variante</h4>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Talle</label>
+                                    <input type="text" name="tamanio" value={newVariant.tamanio} onChange={handleNewVariantChange} placeholder="Ej: M" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Color</label>
+                                    <input type="text" name="color" value={newVariant.color} onChange={handleNewVariantChange} placeholder="Ej: Negro" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Stock</label>
+                                    <input type="number" name="cantidad_en_stock" value={newVariant.cantidad_en_stock} onChange={handleNewVariantChange} placeholder="Ej: 50" min="0" />
+                                </div>
+                                <div className="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="button" onClick={handleAddVariant} className="submit-btn secondary">Añadir Variante</button>
+                                </div>
+                            </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
 
-                <div className="form-group" style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
-                    <label htmlFor="images">AÑADIR IMÁGENES (hasta 3 en total)</label>
-                    <input type="file" id="images" name="images" multiple accept="image/*" onChange={handleFileChange} />
-
-                    {isEditing && (
-                        <div style={{ marginTop: '10px' }}>
-                            <p>Imágenes actuales (arrastra para reordenar):</p>
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleDragEnd}
-                            >
-                                <SortableContext
-                                    items={visibleImages}
-                                    strategy={rectSortingStrategy}
-                                >
-                                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                        {visibleImages.map(img => (
-                                            <SortableImage key={img} id={img} src={img} onRemove={handleDeleteExistingImage} />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                            </DndContext>
-                        </div>
-                    )}
-                </div>
-
-                <button type="submit" className="submit-btn" disabled={loading}>
-                    {loading ? 'Guardando...' : 'Guardar Producto'}
+                <button type="submit" className="submit-btn main-submit" disabled={loading}>
+                    {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Producto y Añadir Variantes')}
                 </button>
+                 {!isEditing && <p className="form-note">Primero se creará el producto. Luego, podrás añadirle los talles y colores en esta misma pantalla.</p>}
             </form>
         </div>
     );

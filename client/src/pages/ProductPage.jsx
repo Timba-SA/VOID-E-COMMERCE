@@ -27,7 +27,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // --- ¡NUEVA LÓGICA DE ESTADO! ---
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
 
@@ -78,8 +77,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         window.scrollTo(0, 0);
     }, [productId, notify]);
 
-    // --- LÓGICA PARA FILTRAR VARIANTES ---
-    // Obtenemos los colores únicos que tienen stock
     const availableColors = useMemo(() => {
         if (!product?.variantes) return [];
         const colorsWithStock = product.variantes
@@ -88,7 +85,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         return [...new Set(colorsWithStock)];
     }, [product]);
 
-    // Obtenemos los talles disponibles PARA EL COLOR SELECCIONADO
     const availableSizesForSelectedColor = useMemo(() => {
         if (!product?.variantes || !selectedColor) return [];
         return product.variantes.filter(v => v.color === selectedColor && v.cantidad_en_stock > 0);
@@ -96,7 +92,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
 
     const handleColorSelect = (color) => {
         setSelectedColor(color);
-        // Al cambiar de color, reseteamos el talle o seleccionamos el primero disponible
         const firstAvailableSize = product.variantes.find(v => v.color === color && v.cantidad_en_stock > 0);
         setSelectedSize(firstAvailableSize ? firstAvailableSize.tamanio : null);
     };
@@ -186,7 +181,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     <h1 className="product-name">{product.nombre}</h1>
                     <p className="product-price">{formatPrice(product.precio)}</p>
                     
-                    {/* --- SELECCIÓN DE COLOR --- */}
                     <div className="product-selector">
                         <p className="selector-label">COLOR: <span>{selectedColor || 'N/A'}</span></p>
                         <div className="selector-buttons">
@@ -202,13 +196,12 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         </div>
                     </div>
 
-                    {/* --- SELECCIÓN DE TALLE --- */}
                     <div className="product-selector">
                         <p className="selector-label">SIZE: <span>{selectedSize || 'N/A'}</span></p>
                         <div className="selector-buttons">
                             {availableSizesForSelectedColor.map(variant => (
                                 <button
-                                    key={variant.tamanio}
+                                    key={variant.id} // Usamos el ID de la variante para la key, es más seguro
                                     className={`size-button ${selectedSize === variant.tamanio ? 'active' : ''}`}
                                     onClick={() => setSelectedSize(variant.tamanio)}
                                     disabled={variant.cantidad_en_stock <= 0}
@@ -223,7 +216,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         <p>{product.descripcion || "No description available."}</p>
                     </div>
                     
-                    <button onClick={handleAddToCart} disabled={isOutOfStock} className="add-to-cart-button">
+                    <button onClick={handleAddToCart} disabled={isOutOfStock || !selectedSize} className="add-to-cart-button">
                         {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO BAG'}
                     </button>
                 </div>
