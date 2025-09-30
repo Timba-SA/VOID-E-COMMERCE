@@ -723,3 +723,265 @@ main {
     .phone-input-group .prefix, .phone-input-group .phone-number { flex-basis: auto; }
     .form-title { font-size: 1rem; }
 }
+
+/* --- Admin Form --- */
+.admin-form {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: #888;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.back-link:hover {
+  color: #000;
+}
+
+.form-section {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e9ecef;
+}
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.form-section h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #343a40;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem 2rem;
+}
+.form-group {
+  margin-bottom: 0; /* Reset margin from general forms */
+}
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+.form-group label {
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: #888;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* --- Overriding general input styles for a more robust admin form --- */
+.admin-form .form-group input,
+.admin-form .form-group textarea,
+.admin-form .form-group select {
+  width: 100%;
+  border: 1px solid #ced4da;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  background-color: #fff;
+  font-family: var(--font-nav);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+.admin-form .form-group input:focus,
+.admin-form .form-group textarea:focus,
+.admin-form .form-group select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* Image Upload Styles */
+.file-input-label {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.file-input-label:hover {
+  background-color: #e9ecef;
+}
+.file-input {
+  display: none;
+}
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.sortable-image-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  cursor: grab;
+}
+.sortable-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.remove-image-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sortable-image-item:hover .remove-image-btn {
+  opacity: 1;
+}
+
+/* Variants Table */
+.variants-table {
+  margin-bottom: 2rem;
+}
+.variants-table .action-btn.delete {
+  color: #dc3545;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.variants-table .action-btn.delete:hover {
+  color: #a71d2a;
+}
+
+/* Add Variant Form */
+.add-variant-form {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+.add-variant-form h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.add-variant-form .form-group label:not([for]) {
+  visibility: hidden;
+}
+
+/* Submit Buttons */
+.submit-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.submit-btn.main-submit {
+  background-color: #000;
+  color: #fff;
+  border-color: #000;
+  float: right; /* Alinea el botón principal a la derecha */
+}
+.submit-btn.main-submit:hover {
+  background-color: #333;
+  border-color: #333;
+}
+.submit-btn.main-submit:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+.submit-btn.secondary {
+  background-color: #6c757d;
+  color: #fff;
+  border-color: #6c757d;
+}
+.submit-btn.secondary:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.form-note {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 1rem;
+  text-align: center;
+}
+/* --- Admin Table Actions --- */
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  border-radius: 4px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.action-btn.edit {
+  background-color: #6b6b6b;
+  color: white;
+  border-color: #6b6b6b;
+}
+.action-btn.edit:hover {
+  background-color: #696969;
+  border-color: #696969;
+}
+
+.action-btn.variants {
+  background-color: #696969;
+  color: white;
+  border-color: #696969;
+}
+.action-btn.variants:hover {
+  background-color: #696969;
+  border-color: #696969;
+}
+
+.action-btn.delete {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+  cursor: pointer;
+}
+.action-btn.delete:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
