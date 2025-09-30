@@ -5,12 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-# --- IMPORTACIONES NUEVAS ---
+import sentry_sdk
+from settings import settings
 from database.database import engine, AsyncSessionLocal
 from database.models import Base, Categoria
-# --- FIN IMPORTACIONES NUEVAS ---
-
 from routers import (
     health_router, auth_router, products_router, cart_router,
     admin_router, chatbot_router, checkout_router, orders_router,
@@ -43,6 +41,14 @@ async def seed_initial_data():
             print("Categorías iniciales cargadas con éxito.")
         else:
             print("La base de datos de categorías ya tiene datos.")
+
+# --- Configuración de Sentry ---
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.APP_ENV,
+        traces_sample_rate=1.0,
+    )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
