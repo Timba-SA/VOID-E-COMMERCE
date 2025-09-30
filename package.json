@@ -1,0 +1,24 @@
+{
+  "name": "void-e-commerce",
+  "version": "1.0.0",
+  "description": "Proyecto Full Stack de una tienda de ropa online. Incluye un backend robusto con FastAPI para manejar la lógica de negocio, productos, usuarios y pagos, y un frontend interactivo construido con React.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --prefix client\" \"run-backend.bat\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Timba-SA/VOID-E-COMMERCE.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Timba-SA/VOID-E-COMMERCE/issues"
+  },
+  "homepage": "https://github.com/Timba-SA/VOID-E-COMMERCE#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

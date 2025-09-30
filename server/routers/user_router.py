@@ -30,7 +30,9 @@ async def get_user_addresses(
 ):
     """Devuelve una lista de todas las direcciones guardadas por el usuario."""
     user_doc = await db.users.find_one({"_id": current_user.id})
-    return user_doc.get("addresses", [])
+    if user_doc:
+        return user_doc.get("addresses", [])
+    return []
 
 
 @router.post("/addresses", status_code=status.HTTP_201_CREATED, summary="Añadir una nueva dirección")
