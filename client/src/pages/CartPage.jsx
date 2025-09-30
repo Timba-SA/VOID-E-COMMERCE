@@ -1,5 +1,3 @@
-// En FRONTEND/src/pages/CartPage.jsx
-
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
@@ -40,7 +38,7 @@ const CartPage = () => {
             <div className="cart-content">
                 <div className="cart-header">
                     <span>ITEM</span>
-                    <button onClick={() => navigate(-1)} className="cart-close-btn">
+                    <button onClick={() => navigate('/')} className="cart-close-btn">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1 1L17 17M17 1L1 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                         </svg>
@@ -56,17 +54,15 @@ const CartPage = () => {
                         <div className="cart-items-list">
                             {cart.items.map(item => (
                                 <div className="cart-item-row" key={item.variante_id}>
-                                    <div className="item-info-left">
-                                        <div className="item-image">
-                                            <img src={item.image_url || '/img/placeholder.jpg'} alt={item.name} />
-                                        </div>
-                                        <div className="item-details">
-                                            <h3>VOID</h3>
-                                            <p>{item.name}</p>
-                                            <p>SIZE: {item.size}</p>
-                                        </div>
+                                    <div className="item-image">
+                                        <img src={item.image_url || '/img/placeholder.jpg'} alt={item.name} />
                                     </div>
-                                    <div className="item-info-right">
+                                    <div className="item-details">
+                                        <h3>VOID</h3>
+                                        <p>{item.name}</p>
+                                        <p>SIZE: {item.size}</p>
+                                    </div>
+                                    <div className="item-actions">
                                         <span className="item-price">{formatPrice(item.price * item.quantity)} ARS</span>
                                         <button 
                                             onClick={() => removeItemFromCart(item.variante_id)} 
@@ -86,7 +82,7 @@ const CartPage = () => {
                             </div>
                             <div className="summary-line">
                                 <span>SHIPPING ESTIMATE</span>
-                                <span>CALCULATED AT CHECKOUT</span>
+                                <span className="summary-info">CALCULATED AT CHECKOUT</span>
                             </div>
                             <div className="summary-line total">
                                 <span>ORDER TOTAL</span>
