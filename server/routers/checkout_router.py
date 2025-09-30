@@ -17,7 +17,6 @@ sdk = settings.MERCADOPAGO_TOKEN and mercadopago.SDK(settings.MERCADOPAGO_TOKEN)
 FRONTEND_URL = settings.FRONTEND_URL
 BACKEND_URL = settings.BACKEND_URL
 
-# 1. HELPER ACTUALIZADO: Ahora acepta la dirección de envío
 async def save_order_and_update_stock(
     db: AsyncSession, 
     usuario_id: str, 
@@ -25,51 +24,66 @@ async def save_order_and_update_stock(
     payment_id: str, 
     items_comprados: list,
     metodo_pago: str,
-    shipping_address: dict = None # Parámetro opcional para la dirección
+    shipping_address: dict = None
 ):
-    try:
-        new_order = Orden(
-            usuario_id=usuario_id, 
-            monto_total=monto_total, 
-            estado="Completado",
-            estado_pago="Aprobado", 
-            metodo_pago=metodo_pago,
-            payment_id_mercadopago=payment_id,
-            direccion_envio=shipping_address # Guardamos la dirección en formato JSON
-        )
-        db.add(new_order)
-        await db.flush()
-
-        for item in items_comprados:
-            variante_id = int(item.get("id") or item.get("variante_id"))
-            cantidad_comprada = int(item.get("quantity"))
-            precio_unitario = float(item.get("unit_price") or item.get("price"))
-
-            db.add(DetalleOrden(
-                orden_id=new_order.id, 
-                variante_producto_id=variante_id,
-                cantidad=cantidad_comprada, 
-                precio_en_momento_compra=precio_unitario
-            ))
-
-            result = await db.execute(
-                select(VarianteProducto).where(VarianteProducto.id == variante_id).with_for_update()
+    # Con este bloque, o todo se ejecuta con éxito, o nada se guarda.
+    async with db.begin_nested():
+        try:
+            # Creamos la nueva orden
+            new_order = Orden(
+                usuario_id=usuario_id, 
+                monto_total=monto_total, 
+                estado="Completado",
+                estado_pago="Aprobado", 
+                metodo_pago=metodo_pago,
+                payment_id_mercadopago=payment_id,
+                direccion_envio=shipping_address
             )
-            variante_producto = result.scalars().first()
+            db.add(new_order)
             
-            if not variante_producto or variante_producto.cantidad_en_stock < cantidad_comprada:
-                raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
-            
-            variante_producto.cantidad_en_stock -= cantidad_comprada
-        
-        await db.commit()
-        logger.info(f"Orden {new_order.id} guardada y stock actualizado exitosamente.")
-        return new_order.id
+            # Usamos flush() para enviar los datos a la DB y obtener el ID de la nueva orden,
+            # pero SIN confirmar la transacción todavía.
+            await db.flush()
 
-    except Exception as e:
-        logger.error(f"Error CRÍTICO al guardar la orden: {e}")
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al procesar la orden: {str(e)}")
+            # Iteramos sobre los items para crear los detalles y actualizar el stock
+            for item in items_comprados:
+                # Nos aseguramos de manejar ambos posibles nombres de campo para el ID y precio
+                variante_id = int(item.get("id") or item.get("variante_id"))
+                cantidad_comprada = int(item.get("quantity"))
+                precio_unitario = float(item.get("unit_price") or item.get("price"))
+
+                # Creamos el detalle de la orden
+                db.add(DetalleOrden(
+                    orden_id=new_order.id, 
+                    variante_producto_id=variante_id,
+                    cantidad=cantidad_comprada, 
+                    precio_en_momento_compra=precio_unitario
+                ))
+
+                # Buscamos la variante y bloqueamos la fila para evitar que otro proceso la modifique
+                # hasta que nuestra transacción termine (esto previene "race conditions").
+                result = await db.execute(
+                    select(VarianteProducto).where(VarianteProducto.id == variante_id).with_for_update()
+                )
+                variante_producto = result.scalars().first()
+                
+                # Chequeo de stock
+                if not variante_producto or variante_producto.cantidad_en_stock < cantidad_comprada:
+                    # Si lanzamos una excepción aquí, el 'async with db.begin()' hará ROLLBACK de todo.
+                    raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
+                
+                # Restamos el stock
+                variante_producto.cantidad_en_stock -= cantidad_comprada
+            
+            # Si el bucle termina sin errores, el bloque 'async with' hará COMMIT de todo al salir.
+            logger.info(f"Orden {new_order.id} pre-procesada y stock actualizado. A la espera del COMMIT.")
+            return new_order.id
+
+        except Exception as e:
+            # No necesitamos db.rollback() aquí, el 'async with' lo maneja solo.
+            logger.error(f"Error CRÍTICO durante la transacción de la orden: {e}. Se activará ROLLBACK.")
+            # Relanzamos la excepción para que el webhook sepa que algo falló y el 'async with' haga rollback.
+            raise HTTPException(status_code=500, detail=f"Error al procesar la orden: {str(e)}")
 
 # 2. ENDPOINT DE PREFERENCIA ACTUALIZADO
 @router.post("/create-preference", summary="Crea preferencia para redirigir a MP")

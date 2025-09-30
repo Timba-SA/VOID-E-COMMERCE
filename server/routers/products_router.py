@@ -153,7 +153,7 @@ async def create_product(
     return created_product
 
 
-@router.put("/{product_id}", response_model=product_schemas.Product, summary="Actualizar un producto (Solo Admins)")
+@router.put("/{product_id}", response_model=dict, summary="Actualizar un producto (Solo Admins)")
 async def update_product(
     product_id: int, 
     db: AsyncSession = Depends(get_db), 
@@ -223,9 +223,8 @@ async def update_product(
     # 3. Guardar en la base de datos
     db.add(product_db)
     await db.commit()
-    await db.refresh(product_db)
     
-    return product_db
+    return {"message": "Producto actualizado exitosamente"}
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_200_OK, summary="Eliminar un producto (Solo Admins)")

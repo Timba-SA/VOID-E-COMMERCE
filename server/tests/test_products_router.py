@@ -28,16 +28,39 @@ async def test_get_product_by_id_not_found(client: AsyncClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 @pytest.mark.asyncio
-async def test_create_product_as_admin(admin_authenticated_client: AsyncClient, test_category: Categoria):
+# 1. Agregamos 'mocker' a la lista de herramientas del test
+async def test_create_product_as_admin(
+    admin_authenticated_client: AsyncClient,
+    test_category: Categoria,
+    mocker
+):
     product_data = {
-        "nombre": "Producto Creado por Admin", "descripcion": "Una descripción nueva",
-        "precio": 99.99, "sku": "SKU-ADMIN-CREATE-001", "stock": 50,
-        "categoria_id": test_category.id  # <-- ¡USA LA CATEGORÍA REAL!
+        "nombre": "Producto Creado por Admin",
+        "descripcion": "Una descripción nueva",
+        "precio": str(99.99),
+        "sku": "SKU-ADMIN-CREATE-001",
+        "stock": str(50),
+        "categoria_id": str(test_category.id)
     }
-    response = await admin_authenticated_client.post("/api/products/", json=product_data)
+    files = {'images': ('test.jpg', b'', 'image/jpeg')}
+
+    # 2. Le ponemos el "doble de riesgo" a la función de Cloudinary
+    # Le decimos: "cuando alguien intente subir imágenes, no hagas nada,
+    # solo devolvé esta lista con una URL falsa".
+    mocker.patch(
+        "services.cloudinary_service.upload_images",
+        return_value=["http://fake.cloudinary.url/image.jpg"]
+    )
+
+    response = await admin_authenticated_client.post(
+        "/api/products/", data=product_data, files=files
+    )
+    
     assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
     assert data["nombre"] == product_data["nombre"]
+    # Verificamos que la URL "falsa" se haya guardado
+    assert data["urls_imagenes"][0] == "http://fake.cloudinary.url/image.jpg"
 
 @pytest.mark.asyncio
 async def test_create_product_as_user_forbidden(authenticated_client: AsyncClient, test_category: Categoria):
@@ -47,11 +70,12 @@ async def test_create_product_as_user_forbidden(authenticated_client: AsyncClien
 
 @pytest.mark.asyncio
 async def test_update_product_as_admin(admin_authenticated_client: AsyncClient, test_product_sql: Producto):
-    update_data = {"precio": 15.99, "stock": 75}
-    response = await admin_authenticated_client.put(f"/api/products/{test_product_sql.id}", json=update_data)
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["precio"] == update_data["precio"]
+    update_data = {"precio": "15.99", "stock": "75"}
+    response = await admin_authenticated_client.put(
+        f"/api/products/{test_product_sql.id}", data=update_data
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Producto actualizado exitosamente"
 
 @pytest.mark.asyncio
 async def test_update_product_not_found(admin_authenticated_client: AsyncClient):
@@ -62,7 +86,7 @@ async def test_update_product_not_found(admin_authenticated_client: AsyncClient)
 async def test_delete_product_as_admin(admin_authenticated_client: AsyncClient, test_product_sql: Producto, db_sql: AsyncSession):
     response = await admin_authenticated_client.delete(f"/api/products/{test_product_sql.id}")
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"] == "Product deleted successfully"
+    assert response.json()["message"] == "Producto eliminado exitosamente"
     product_in_db = await db_sql.get(Producto, test_product_sql.id)
     assert product_in_db is None
 

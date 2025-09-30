@@ -10,17 +10,15 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# --- Importaciones de tu app ---
 from main import app
 from database.database import get_db
-# --- ¡AHORA SÍ, EL IMPORT COMPLETO Y CORRECTO! ---
 from database.models import Producto, Base, Categoria
 from database.database import get_db_nosql
 from utils.security import get_password_hash, create_access_token
+from database.models import VarianteProducto
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- Configuración del Event Loop para la sesión ---
 @pytest.fixture(scope="session")
@@ -221,3 +219,25 @@ async def admin_authenticated_client(client: AsyncClient, test_admin: dict) -> A
     token = create_access_token(token_data)
     client.headers.update({"Authorization": f"Bearer {token}"})
     return client
+
+@pytest_asyncio.fixture
+async def product_with_variant_in_stock(db_sql: AsyncSession, test_product_sql: Producto) -> VarianteProducto:
+    """
+    Crea una variante para el producto de prueba y se asegura de que la relación
+    con el producto principal esté cargada para evitar errores de lazy-loading.
+    """
+    variant_data = {
+        "producto_id": test_product_sql.id,
+        "tamanio": "M",
+        "color": "Negro",
+        "cantidad_en_stock": 20
+    }
+    new_variant = VarianteProducto(**variant_data)
+    db_sql.add(new_variant)
+    await db_sql.commit()
+    
+    # Esta es la clave: refrescamos la variante y le pedimos que también
+    # cargue la información del producto relacionado.
+    await db_sql.refresh(new_variant, attribute_names=["producto"])
+    
+    return new_variant
