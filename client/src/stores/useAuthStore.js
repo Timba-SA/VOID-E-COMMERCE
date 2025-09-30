@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
+import { mergeCartAPI } from '../api/cartApi';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -42,15 +43,20 @@ export const useAuthStore = create((set) => ({
 
   login: async (token) => {
     try {
+      const guestSessionId = localStorage.getItem('guestSessionId');
       localStorage.setItem('authToken', token);
-      
+
+      if (guestSessionId) {
+        await mergeCartAPI(guestSessionId);
+        localStorage.removeItem('guestSessionId');
+      }
+
       const user = await useAuthStore.getState().fetchUser();
       if (user) {
         set({ token, isAuthenticated: true });
       } else {
         throw new Error('Could not fetch user data');
       }
-      
     } catch (error) {
       console.error("Fallo al decodificar el token o al obtener el usuario:", error);
     }
