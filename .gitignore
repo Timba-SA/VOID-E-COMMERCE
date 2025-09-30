@@ -25,3 +25,6 @@ frontend/dist/
 .vscode/
 .idea/
 *.log
+
+# Otros archivos
+node_modules/
