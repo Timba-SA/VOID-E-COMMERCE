@@ -51,7 +51,7 @@ const HomePage = () => {
   }, [products]);
 
   return (
-    <main>
+    <main className="home-page">
       <section className="hero-section">
         <div className="hero-image-left">
           <img src="/img/PortadaIzquierda.jpg" alt="Modelo con prenda vanguardista" />

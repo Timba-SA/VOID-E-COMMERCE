@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getCategories } from '../../api/categoriesApi';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { CartContext } from '../../context/CartContext';
 
 const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
-const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
+const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentSubCategory = location.pathname.split('/')[2] || '';
 
   const [activeCategory, setActiveCategory] = useState('menswear');
   const [categories, setCategories] = useState({ womenswear: [], menswear: [] });
+
+  const { isAuthenticated, user, isAuthLoading } = useAuthStore();
+  const { itemCount } = useContext(CartContext);
 
   useEffect(() => {
     const fetchAndOrganizeCategories = async () => {
@@ -50,6 +55,11 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
     } else {
       setActiveCategory(category);
     }
+  };
+
+  const handleSearchClick = () => {
+    onClose();
+    onOpenSearch();
   };
 
   const phantomLogoStyle = logoPosition ? {
@@ -147,6 +157,27 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition }) => {
               )}
             </nav>
           </div>
+
+          <nav className="dropdown-nav-secondary">
+            <ul>
+              <li><button onClick={handleSearchClick} className="category-link">SEARCH</button></li>
+              <li><a href="#" onClick={(e) => e.preventDefault()} className="category-link">LANGUAGE</a></li>
+              {!isAuthLoading && (
+                isAuthenticated ? (
+                  <>
+                    {user?.role === 'admin' && (
+                      <li><Link to="/admin" onClick={onClose} className="category-link">ADMIN</Link></li>
+                    )}
+                    <li><Link to="/account" onClick={onClose} className="category-link">ACCOUNT</Link></li>
+                  </>
+                ) : (
+                  <li><Link to="/login" onClick={onClose} className="category-link">LOGIN</Link></li>
+                )
+              )}
+              <li><Link to="/cart" onClick={onClose} className="category-link">BAG ({itemCount})</Link></li>
+            </ul>
+          </nav>
+
           <div className="dropdown-footer">
             <div className="footer-images">
               <div className="footer-image left"><img src="/img/dropdownIzquierda.jpg" alt="Carretera" /></div>
