@@ -12,8 +12,9 @@ async def test_health_check_sql_ok(client: AsyncClient):
     assert response.json()["status"] == "ok"
 
 @pytest.mark.asyncio
-async def test_health_check_nosql_ok(client: AsyncClient):
+async def test_health_check_nosql_ok(client: AsyncClient, mocker):
     """Prueba el endpoint /health/db-nosql."""
+    mocker.patch("database.database.client.admin.command", return_value=None)
     response = await client.get("/health/db-nosql")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
