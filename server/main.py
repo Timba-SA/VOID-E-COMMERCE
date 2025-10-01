@@ -14,6 +14,7 @@ from routers import (
     admin_router, chatbot_router, checkout_router, orders_router,
     user_router, categories_router
 )
+from utils.limiter import limiter, RateLimitExceeded, _rate_limit_exceeded_handler
 
 # --- ACÁ ESTÁ LA MAGIA CORREGIDA ---
 async def seed_initial_data():
@@ -67,6 +68,9 @@ app = FastAPI(
     version="0.6.0",
     lifespan=lifespan
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = [
     "http://localhost",

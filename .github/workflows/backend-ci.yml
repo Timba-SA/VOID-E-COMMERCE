@@ -37,6 +37,7 @@ jobs:
         # valores de prueba que no son secretos.
         # ==========================================================
         env:
+          PYTHONUTF8: "1"
           APP_ENV: "test"
           FRONTEND_URL: "http://localhost:3000"
           BACKEND_URL: "http://test"

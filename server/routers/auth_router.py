@@ -1,6 +1,6 @@
 # En backend/routers/auth_router.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pymongo.database import Database
 from datetime import datetime, timedelta, timezone
@@ -12,13 +12,12 @@ from utils import security
 from database.database import get_db_nosql
 from services import auth_services as auth_service
 from services import email_service
+from utils.limiter import limiter
 
 router = APIRouter(
     prefix="/api/auth",
     tags=["Auth"]
 )
-
-# En backend/routers/auth_router.py
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=user_schemas.UserOut)
 async def register_user(user: user_schemas.UserCreate, db: Database = Depends(get_db_nosql)):
@@ -53,21 +52,27 @@ async def register_user(user: user_schemas.UserCreate, db: Database = Depends(ge
     return created_user
 
 @router.post("/login", response_model=user_schemas.Token)
-async def login_for_access_token(db: Database = Depends(get_db_nosql), form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await db.users.find_one({"email": form_data.username})
-
+@limiter.limit("5/minute")  # Limitar a 5 intentos por minuto por IP
+async def login_for_access_token(
+    request: Request, # <-- Lo necesita el patovica para saber la IP
+    db: Database = Depends(get_db_nosql),
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
     incorrect_credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Email o contraseña incorrectos",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    user = await db.users.find_one({"email": form_data.username})
+
     if not user or not security.verify_password(form_data.password, user["hashed_password"]):
         raise incorrect_credentials_exception
 
-    if not user.get("is_active", True): # Si el campo no existe, asumimos que es activo por defecto
+    # Verificación de si el usuario está activo (de la Tarea 6)
+    if not user.get("is_active", True):
         raise incorrect_credentials_exception
-    
+
     token_data = {
         "sub": user["email"],
         "user_id": str(user["_id"]),
