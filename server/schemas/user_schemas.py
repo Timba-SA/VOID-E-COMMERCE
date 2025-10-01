@@ -19,6 +19,7 @@ class UserBase(BaseModel):
     last_name: str
     phone: Optional[Phone] = None
     role: str = "user"
+    is_active: bool = True
 
 class UserCreate(UserBase):
     password: str
@@ -26,7 +27,7 @@ class UserCreate(UserBase):
 # --- LA CLASE CORREGIDA ---
 class UserOut(UserBase):
     id: PyObjectId = Field(alias="_id")
-
+    # El campo 'is_active' se hereda automáticamente de UserBase
     model_config = ConfigDict(
         populate_by_name = True,
         arbitrary_types_allowed = True

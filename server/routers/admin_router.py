@@ -220,3 +220,27 @@ async def get_expenses_by_category(db: AsyncSession = Depends(get_db)):
     )
     result = [metrics_schemas.ExpensesByCategoryDataPoint(categoria=row.categoria, monto=float(row.monto)) for row in expenses_data.all()]
     return metrics_schemas.ExpensesByCategoryChart(data=result)
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_200_OK, summary="Desactivar un usuario (Soft Delete)")
+async def deactivate_user(
+    user_id: str,
+    db: Database = Depends(get_db_nosql)
+):
+    """
+    Realiza un borrado lógico (soft delete) de un usuario, cambiando su estado a inactivo.
+    El usuario no podrá iniciar sesión pero sus datos no se eliminarán.
+    """
+    try:
+        object_id = ObjectId(user_id)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID de usuario inválido")
+
+    result = await db.users.update_one(
+        {"_id": object_id},
+        {"$set": {"is_active": False}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    return {"message": "Usuario desactivado con éxito."}

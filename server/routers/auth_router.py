@@ -56,13 +56,18 @@ async def register_user(user: user_schemas.UserCreate, db: Database = Depends(ge
 async def login_for_access_token(db: Database = Depends(get_db_nosql), form_data: OAuth2PasswordRequestForm = Depends()):
     user = await db.users.find_one({"email": form_data.username})
 
-    if not user or not security.verify_password(form_data.password, user["hashed_password"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email o contraseña incorrectos",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    incorrect_credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Email o contraseña incorrectos",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
+    if not user or not security.verify_password(form_data.password, user["hashed_password"]):
+        raise incorrect_credentials_exception
+
+    if not user.get("is_active", True): # Si el campo no existe, asumimos que es activo por defecto
+        raise incorrect_credentials_exception
+    
     token_data = {
         "sub": user["email"],
         "user_id": str(user["_id"]),
