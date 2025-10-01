@@ -27,7 +27,6 @@ async def get_all_categories(db: AsyncSession = Depends(get_db)):
         return [product_schemas.Categoria.model_validate(cat) for cat in cached_categories]
 
     # 2. Si no hay nada en el caché, vamos a la base de datos (como antes)
-    print("Respuesta desde la BASE DE DATOS... 🐌")
     result = await db.execute(select(Categoria).order_by(Categoria.nombre))
     categories = result.scalars().all()
 

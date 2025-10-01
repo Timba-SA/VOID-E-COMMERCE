@@ -73,3 +73,12 @@ class Settings(BaseSettings):
 
 # Instancia global
 settings = Settings()
+
+# --- AJUSTE DINÁMICO DE REDIS_URL ---
+# Si no estamos en un contenedor Docker, y la URL de Redis apunta al hostname 'redis',
+# la cambiamos a 'localhost'. Esto permite que la misma configuración .env
+# funcione tanto para desarrollo local como para Docker.
+import os
+if not os.path.exists('/.dockerenv') and settings.REDIS_URL and '://redis:' in settings.REDIS_URL:
+    print("INFO: Entorno local detectado. Cambiando Redis host a 'localhost'.")
+    settings.REDIS_URL = settings.REDIS_URL.replace('://redis:', '://localhost:')
