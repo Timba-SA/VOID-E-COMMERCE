@@ -1,5 +1,6 @@
 // En FRONTEND/src/pages/AccountPage.jsx
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next'; // Importar
 import { useAuthStore } from '../stores/useAuthStore';
 import { getMyOrdersAPI } from '../api/ordersApi';
 import Spinner from '../components/common/Spinner';
@@ -9,6 +10,7 @@ const ProfileManagement = lazy(() => import('../components/account/ProfileManage
 const AddressManagement = lazy(() => import('../components/account/AddressManagement'));
 
 const AccountPage = () => {
+  const { t } = useTranslation(); // Inicializar
   const { user, logout } = useAuthStore();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +35,7 @@ const AccountPage = () => {
   }, [activeView]);
 
   const handleLogout = () => {
-    // --- LA SOLUCIÓN DEFINITIVA ESTÁ AQUÍ ---
-    // 1. PRIMERO, iniciamos la navegación a la página principal.
     navigate('/');
-    
-    // 2. DESPUÉS, envolvemos el logout en un setTimeout de 0ms.
-    // Esto lo envía al final de la cola de ejecución, dándole
-    // prioridad a la navegación para que comience sin ser interrumpida.
     setTimeout(() => {
       logout();
     }, 0);
@@ -65,10 +61,10 @@ const AccountPage = () => {
             <table className="account-table">
               <thead>
                 <tr>
-                  <th>ORDER ID</th>
-                  <th>DATE</th>
-                  <th>TOTAL</th>
-                  <th>STATUS</th>
+                  <th>{t('account_table_order_id')}</th>
+                  <th>{t('account_table_date')}</th>
+                  <th>{t('account_table_total')}</th>
+                  <th>{t('account_table_status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,7 +82,7 @@ const AccountPage = () => {
                 ))}
               </tbody>
             </table>
-          ) : <p className="no-orders-message">You haven't placed any orders yet.</p>
+          ) : <p className="no-orders-message">{t('account_no_orders')}</p>
         );
     }
   };
@@ -94,7 +90,7 @@ const AccountPage = () => {
   return (
     <main className="account-page-container">
       <div className="account-header">
-        <h1>MY ACCOUNT</h1>
+        <h1>{t('account_title')}</h1>
       </div>
       <div className="account-content-grid">
         <aside className="account-sidebar">
@@ -103,12 +99,12 @@ const AccountPage = () => {
             <p className="user-email">{user?.email}</p>
           </div>
           <nav className="account-nav">
-            <a onClick={() => setActiveView('orders')} className={`account-nav-link ${activeView === 'orders' ? 'active' : ''}`}>Order History</a>
-            <a onClick={() => setActiveView('profile')} className={`account-nav-link ${activeView === 'profile' ? 'active' : ''}`}>Profile</a>
-            <a onClick={() => setActiveView('addresses')} className={`account-nav-link ${activeView === 'addresses' ? 'active' : ''}`}>Addresses</a>
+            <a onClick={() => setActiveView('orders')} className={`account-nav-link ${activeView === 'orders' ? 'active' : ''}`}>{t('account_order_history')}</a>
+            <a onClick={() => setActiveView('profile')} className={`account-nav-link ${activeView === 'profile' ? 'active' : ''}`}>{t('account_profile')}</a>
+            <a onClick={() => setActiveView('addresses')} className={`account-nav-link ${activeView === 'addresses' ? 'active' : ''}`}>{t('account_addresses')}</a>
           </nav>
           <button onClick={handleLogout} className="account-logout-btn">
-            LOG OUT
+            {t('account_logout_button')}
           </button>
         </aside>
 

@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     getKpisAPI,
     getSalesOverTimeAPI,
@@ -9,6 +9,7 @@ import Spinner from '../components/common/Spinner';
 import AdminCharts from '../components/admin/AdminCharts';
 
 const AdminDashboardPage = () => {
+  const { t } = useTranslation();
   const [kpis, setKpis] = useState(null);
   const [salesData, setSalesData] = useState(null);
   const [expensesData, setExpensesData] = useState(null);
@@ -24,58 +25,51 @@ const AdminDashboardPage = () => {
           getSalesOverTimeAPI(),
           getExpensesByCategoryAPI()
         ]);
-
         setKpis(kpisResponse);
         setSalesData(salesResponse);
         setExpensesData(expensesResponse);
-
       } catch (err) {
         setError(err.detail || 'No se pudieron cargar los datos del dashboard.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
 
-  if (loading) return <Spinner message="Cargando dashboard..." />;
+  if (loading) return <Spinner message={t('admin_dashboard_loading')} />;
 
   return (
     <>
-        <h1>Dashboard</h1>
-        <p>Desde acá vas a poder controlar toda la magia de VOID.</p>
+        <h1>{t('admin_dashboard_title')}</h1>
+        <p>{t('admin_dashboard_subtitle')}</p>
 
         {error && <p style={{color: 'red'}}>Error: {error}</p>}
 
         {kpis && (
           <div className="dashboard-widgets">
             <div className="widget">
-              <h3>Ingresos Totales</h3>
+              <h3>{t('admin_kpi_total_revenue')}</h3>
               <p className="widget-value">${kpis.total_revenue.toLocaleString('es-AR')}</p>
             </div>
             <div className="widget">
-              <h3>Ticket Promedio</h3>
+              <h3>{t('admin_kpi_avg_ticket')}</h3>
               <p className="widget-value">${kpis.average_ticket.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
             </div>
             <div className="widget">
-              <h3>Órdenes Totales</h3>
+              <h3>{t('admin_kpi_total_orders')}</h3>
               <p className="widget-value">{kpis.total_orders}</p>
             </div>
-
-            {/* --- ¡WIDGET NUEVO AGREGADO ACÁ! --- */}
             <div className="widget">
-              <h3>Productos Vendidos</h3>
+              <h3>{t('admin_kpi_products_sold')}</h3>
               <p className="widget-value">{kpis.total_products_sold}</p>
             </div>
-            {/* --- FIN DEL WIDGET NUEVO --- */}
-
              <div className="widget">
-              <h3>Usuarios Registrados</h3>
+              <h3>{t('admin_kpi_total_users')}</h3>
               <p className="widget-value">{kpis.total_users}</p>
             </div>
             <div className="widget">
-              <h3>Gastos Totales</h3>
+              <h3>{t('admin_kpi_total_expenses')}</h3>
               <p className="widget-value">${kpis.total_expenses.toLocaleString('es-AR')}</p>
             </div>
           </div>

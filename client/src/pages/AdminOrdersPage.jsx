@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { getOrdersAPI } from '../api/adminApi'; // 1. Importar la función de API
+import { useTranslation } from 'react-i18next'; // Importar
+import { getOrdersAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
 const AdminOrdersPage = () => {
+  const { t } = useTranslation(); // Inicializar
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,7 +17,6 @@ const AdminOrdersPage = () => {
       setLoading(true);
       setError('');
       try {
-        // 2. Usar la función de API centralizada
         const data = await getOrdersAPI();
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -29,14 +30,14 @@ const AdminOrdersPage = () => {
     };
 
     fetchOrders();
-  }, [notify]); // El token ya no es necesario como dependencia
+  }, [notify]);
 
-  if (loading) return <Spinner message="Cargando órdenes..." />;
+  if (loading) return <Spinner message={t('admin_orders_loading')} />;
 
   return (
     <div>
       <div className="admin-header">
-        <h1>Gestión de Órdenes</h1>
+        <h1>{t('admin_orders_title')}</h1>
       </div>
       
       {error && <p className="error-message" style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
@@ -44,12 +45,12 @@ const AdminOrdersPage = () => {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>ID Orden</th>
-            <th>ID Usuario</th>
-            <th>Monto Total</th>
-            <th>Estado Pago</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
+            <th>{t('admin_orders_table_order_id')}</th>
+            <th>{t('admin_orders_table_user_id')}</th>
+            <th>{t('admin_orders_table_total')}</th>
+            <th>{t('admin_orders_table_status')}</th>
+            <th>{t('admin_orders_table_date')}</th>
+            <th>{t('admin_orders_table_actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -67,14 +68,14 @@ const AdminOrdersPage = () => {
                 <td>{new Date(order.creado_en).toLocaleDateString('es-AR')}</td>
                 <td className="actions-cell">
                   <Link to={`/admin/orders/${order.id}`} className="action-btn view">
-                    Ver Detalles
+                    {t('admin_orders_view_details')}
                   </Link>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="6" style={{textAlign: 'center'}}>Todavía no hay ninguna orden. ¡A vender!</td>
+              <td colSpan="6" style={{textAlign: 'center'}}>{t('admin_orders_none')}</td>
             </tr>
           )}
         </tbody>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next'; // Importar
 import { getUsersAPI, updateUserRoleAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
 const AdminUsersPage = () => {
+  const { t } = useTranslation(); // Inicializar
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,29 +28,26 @@ const AdminUsersPage = () => {
   }, []);
 
   const handleRoleChange = async (userId, newRole) => {
-    // Actualiza la UI inmediatamente para una respuesta visual rápida
     const originalUsers = users;
     const newUsers = users.map(u => (u.id === userId ? { ...u, role: newRole } : u));
     setUsers(newUsers);
 
     try {
-      // Llama a la API para persistir el cambio
       await updateUserRoleAPI(userId, newRole);
-      notify('Rol actualizado con éxito.', 'success');
-      // El estado ya está actualizado, no es necesario hacer nada más
+      notify(t('admin_users_update_success'), 'success');
     } catch (err) {
-      // Si la API falla, revierte el cambio en la UI y notifica el error
       setUsers(originalUsers);
-      notify(`Error: ${err.detail || 'No se pudo actualizar el rol.'}`, 'error');
+      const errorMsg = err.detail || t('admin_users_update_error');
+      notify(`Error: ${errorMsg}`, 'error');
     }
   };
 
-  if (loading) return <Spinner message="Cargando usuarios..." />;
+  if (loading) return <Spinner message={t('admin_users_loading')} />;
 
   return (
     <div>
       <div className="admin-header">
-        <h1>Gestión de Usuarios</h1>
+        <h1>{t('admin_users_title')}</h1>
       </div>
 
       {error && <h2 className="error-message" style={{marginBottom: '1rem'}}>{error}</h2>}
@@ -56,10 +55,10 @@ const AdminUsersPage = () => {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Rol</th>
+            <th>{t('admin_users_table_id')}</th>
+            <th>{t('admin_users_table_name')}</th>
+            <th>{t('admin_users_table_email')}</th>
+            <th>{t('admin_users_table_role')}</th>
           </tr>
         </thead>
         <tbody>
@@ -71,15 +70,15 @@ const AdminUsersPage = () => {
                 <td>{user.email}</td>
                 <td>
                   <select value={user.role} onChange={(e) => handleRoleChange(user._id, e.target.value)} className="role-select">
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
+                      <option value="user">{t('admin_users_role_user')}</option>
+                      <option value="admin">{t('admin_users_role_admin')}</option>
                   </select>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="4" style={{textAlign: 'center'}}>No hay usuarios para mostrar.</td>
+              <td colSpan="4" style={{textAlign: 'center'}}>{t('admin_users_none')}</td>
             </tr>
           )}
         </tbody>

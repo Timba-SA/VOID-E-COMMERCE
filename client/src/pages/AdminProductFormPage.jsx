@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getProductById, createProduct, updateProduct } from '../api/productsApi';
 import { getCategories } from '../api/categoriesApi';
 import { addVariantAPI, deleteVariantAPI } from '../api/adminApi';
@@ -22,6 +23,7 @@ const SortableImage = ({ id, src, onRemove }) => {
 };
 
 const AdminProductFormPage = () => {
+    const { t } = useTranslation();
     const { productId } = useParams();
     const navigate = useNavigate();
     const { notify } = useContext(NotificationContext);
@@ -193,55 +195,55 @@ const AdminProductFormPage = () => {
         }
     };
 
-    if (loading) return <Spinner message="Cargando editor de producto..." />;
+    if (loading) return <Spinner message={t('admin_products_loading')} />;
 
     return (
         <div>
-            <Link to="/admin/products" className="back-link">&larr; Volver a Productos</Link>
+            <Link to="/admin/products" className="back-link">&larr; {t('admin_product_form_back')}</Link>
             <div className="admin-header" style={{ justifyContent: 'center' }}>
-                <h1>{isEditing ? 'Editar Producto' : 'Añadir Nuevo Producto'}</h1>
+                <h1>{isEditing ? t('admin_product_form_edit_title') : t('admin_product_form_add_title')}</h1>
             </div>
             
             <form onSubmit={handleSubmit} className="admin-form">
                 <div className="form-section">
-                    <h3>Detalles del Producto</h3>
+                    <h3>{t('admin_product_form_details_title')}</h3>
                     <div className="form-grid">
                          <div className="form-group">
-                            <label htmlFor="nombre">Nombre</label>
+                            <label htmlFor="nombre">{t('admin_product_form_name')}</label>
                             <input type="text" id="nombre" name="nombre" value={productData.nombre} onChange={handleChange} required />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="sku">SKU</label>
+                            <label htmlFor="sku">{t('admin_product_form_sku')}</label>
                             <input type="text" id="sku" name="sku" value={productData.sku} onChange={handleChange} required />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="precio">Precio</label>
+                            <label htmlFor="precio">{t('admin_product_form_price')}</label>
                             <input type="number" id="precio" name="precio" value={productData.precio} onChange={handleChange} required min="0" step="0.01" />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="categoria_id">Categoría</label>
+                            <label htmlFor="categoria_id">{t('admin_product_form_category')}</label>
                             <select id="categoria_id" name="categoria_id" value={productData.categoria_id} onChange={handleChange} required>
-                                <option value="" disabled>-- Seleccione --</option>
+                                <option value="" disabled>{t('admin_product_form_select_category')}</option>
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="form-group full-width">
-                            <label htmlFor="descripcion">Descripción</label>
+                            <label htmlFor="descripcion">{t('admin_product_form_description')}</label>
                             <textarea id="descripcion" name="descripcion" value={productData.descripcion} onChange={handleChange} rows="4"></textarea>
                         </div>
                         <div className="form-group">
-                            <label htmlFor="material">Material</label>
+                            <label htmlFor="material">{t('admin_product_form_material')}</label>
                             <input type="text" id="material" name="material" value={productData.material} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
 
                 <div className="form-section">
-                    <h3>Imágenes (hasta 3, arrastra para ordenar)</h3>
+                    <h3>{t('admin_product_form_images_title')}</h3>
                     <div className="form-group">
-                        <label htmlFor="images" className="file-input-label">Añadir Imágenes</label>
+                        <label htmlFor="images" className="file-input-label">{t('admin_product_form_add_images')}</label>
                         <input type="file" id="images" name="images" multiple accept="image/*" onChange={handleFileChange} className="file-input" />
                     </div>
                     
@@ -258,15 +260,15 @@ const AdminProductFormPage = () => {
 
                 {isEditing && (
                     <div className="form-section">
-                        <h3>Variantes (Talles, Colores y Stock)</h3>
+                        <h3>{t('admin_product_form_variants_title')}</h3>
                         {variants.length > 0 && (
                             <table className="admin-table variants-table">
                                 <thead>
                                     <tr>
-                                        <th>Talle</th>
-                                        <th>Color</th>
-                                        <th>Stock</th>
-                                        <th>Acciones</th>
+                                        <th>{t('admin_product_form_size')}</th>
+                                        <th>{t('admin_product_form_color')}</th>
+                                        <th>{t('admin_product_form_stock')}</th>
+                                        <th>{t('admin_products_table_actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -276,7 +278,7 @@ const AdminProductFormPage = () => {
                                             <td>{variant.color}</td>
                                             <td>{variant.cantidad_en_stock}</td>
                                             <td className="actions-cell">
-                                                <button type="button" className="action-btn delete" onClick={() => handleDeleteVariant(variant.id)}>Eliminar</button>
+                                                <button type="button" className="action-btn delete" onClick={() => handleDeleteVariant(variant.id)}>{t('admin_products_action_delete')}</button>
                                             </td>
                                         </tr>
                                     ))}
@@ -285,23 +287,23 @@ const AdminProductFormPage = () => {
                         )}
                         
                         <div className="add-variant-form">
-                            <h4>Añadir Nueva Variante</h4>
+                            <h4>{t('admin_product_form_add_variant_title')}</h4>
                             <div className="form-grid">
                                 <div className="form-group">
-                                    <label>Talle</label>
+                                    <label>{t('admin_product_form_size')}</label>
                                     <input type="text" name="tamanio" value={newVariant.tamanio} onChange={handleNewVariantChange} placeholder="Ej: M" />
                                 </div>
                                 <div className="form-group">
-                                    <label>Color</label>
+                                    <label>{t('admin_product_form_color')}</label>
                                     <input type="text" name="color" value={newVariant.color} onChange={handleNewVariantChange} placeholder="Ej: Negro" />
                                 </div>
                                 <div className="form-group">
-                                    <label>Stock</label>
+                                    <label>{t('admin_product_form_stock')}</label>
                                     <input type="number" name="cantidad_en_stock" value={newVariant.cantidad_en_stock} onChange={handleNewVariantChange} placeholder="Ej: 50" min="0" />
                                 </div>
                                 <div className="form-group">
                                     <label>&nbsp;</label>
-                                    <button type="button" onClick={handleAddVariant} className="submit-btn secondary">Añadir Variante</button>
+                                    <button type="button" onClick={handleAddVariant} className="submit-btn secondary">{t('admin_product_form_add_variant_button')}</button>
                                 </div>
                             </div>
                         </div>
@@ -309,9 +311,9 @@ const AdminProductFormPage = () => {
                 )}
 
                 <button type="submit" className="submit-btn main-submit" disabled={loading}>
-                    {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Producto y Añadir Variantes')}
+                    {loading ? t('admin_product_form_saving_button') : (isEditing ? t('admin_product_form_save_button') : t('admin_product_form_create_button'))}
                 </button>
-                 {!isEditing && <p className="form-note">Primero se creará el producto. Luego, podrás añadirle los talles y colores en esta misma pantalla.</p>}
+                 {!isEditing && <p className="form-note">{t('admin_product_form_note')}</p>}
             </form>
         </div>
     );
