@@ -20,12 +20,12 @@ jobs:
       - name: Levantar servicios con Docker Compose
         # Este comando usa nuestro docker-compose.yml de la raíz.
         # Levanta el backend y redis en segundo plano (-d) y reconstruye las imágenes (--build).
-        run: docker-compose up --build -d backend redis
+        run: docker compose up --build -d backend redis
       
       - name: Esperar a que los servicios estén listos
         # Damos 10 segundos de changüí para asegurarnos de que Redis y la app
         # hayan tenido tiempo de inicializarse por completo.
-        run: sleep 10
+        run: sleep 15
 
       - name: Correr Tests dentro del contenedor del Backend
         # ¡ACÁ ESTÁ LA MAGIA!
