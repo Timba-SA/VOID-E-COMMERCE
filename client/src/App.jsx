@@ -174,6 +174,7 @@ const AppContent = () => {
                 isOpen={isMenuOpen} 
                 onClose={() => setIsMenuOpen(false)} 
                 logoPosition={logoPosition}
+                onOpenSearch={handleOpenSearch}
             />
             <SearchModal isOpen={isSearchOpen} onClose={handleCloseSearch} />
             <Chatbot />
