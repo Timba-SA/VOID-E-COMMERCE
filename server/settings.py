@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # --- Sentry ---
     SENTRY_DSN: str | None = None  # Por defecto es None, ya que en desarrollo no lo usamos
 
+    # --- Redis ---
+    REDIS_URL: str
+
     # Esto le dice a Pydantic que lea las variables de un archivo .env
     @staticmethod
     def get_env_file():

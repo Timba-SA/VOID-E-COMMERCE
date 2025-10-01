@@ -12,6 +12,9 @@ services:
     env_file:
       - ./server/.env
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    
+    depends_on:
+      - redis
 
   frontend:
     build:
@@ -27,3 +30,25 @@ services:
     environment:
       # Habilita el polling para que Vite detecte cambios de archivos en Docker
       - CHOKIDAR_USEPOLLING=true
+
+  redis:
+    image: "redis:7-alpine" # Usamos una imagen oficial de Redis, súper liviana
+    container_name: void_redis_dev
+    ports:
+      - "6379:6379" # Exponemos el puerto estándar de Redis
+    # Comando para que Redis guarde los datos en disco cada tanto y no sea tan ruidoso en los logs
+    command: redis-server --save 60 1 --loglevel warning
+
+  worker:
+    build:
+      context: ./server # Usa la misma imagen Docker que el backend
+    container_name: void_worker_dev
+    # Este comando le dice al contenedor que, en vez de arrancar la API,
+    # se ponga en modo "obrero" de Celery.
+    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO"]
+    volumes:
+      - ./server:/app # Montamos el volumen para que vea los cambios en el código
+    env_file:
+      - ./server/.env
+    depends_on:
+      - redis # El obrero necesita que el cartero (Redis) esté listo para empezar a trabajar
