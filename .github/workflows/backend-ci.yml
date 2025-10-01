@@ -39,6 +39,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      # ==========================================================
+      # ¡PASO DE DEBUG TEMPORAL!
+      # Este paso va a intentar conectarse a Redis por su cuenta.
+      # ==========================================================
+      - name: Debuggear la conexión con Redis
+        run: |
+          echo "Instalando herramientas de red para ver qué pasa..."
+          sudo apt-get update && sudo apt-get install -y redis-tools
+          
+          echo "--- Intentando conectar a 'localhost' ---"
+          redis-cli -h localhost ping || echo "===> FALLÓ la conexión a localhost"
+          
+          echo "--- Intentando conectar a 'redis' (nombre del servicio) ---"
+          redis-cli -h redis ping || echo "===> FALLÓ la la conexión a redis"
+
       - name: Correr Tests con Pytest
         # ==========================================================
         # ¡AQUÍ ESTÁ LA MAGIA!
