@@ -1,4 +1,4 @@
-# En settings.py
+# settings.py
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -6,10 +6,8 @@ class Settings(BaseSettings):
     # =================================================================
     #  CONFIGURACIÓN DE LA APP Y ENTORNO
     # =================================================================
-    # Esta variable nos dirá si estamos en 'development' o 'production'
     APP_ENV: str = "development"
-    
-    # URLs de la aplicación (¡chau hardcodeo!)
+
     FRONTEND_URL: str
     BACKEND_URL: str
 
@@ -18,7 +16,7 @@ class Settings(BaseSettings):
     # =================================================================
     DB_SQL_URI: str
     DB_NOSQL_URI: str
-    
+
     # =================================================================
     #  SEGURIDAD Y JWT
     # =================================================================
@@ -29,21 +27,24 @@ class Settings(BaseSettings):
     # =================================================================
     #  SERVICIOS DE TERCEROS
     # =================================================================
-    # --- OpenRouter (para el Chatbot IA) ---
-    OPENROUTER_API_KEY: str
-    OPENROUTER_API_URL: str
-    OPENROUTER_MODEL: str
-    
+    # --- OpenRouter (opcional, solo si lo usás) ---
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_API_URL: str | None = None
+    OPENROUTER_MODEL: str | None = None
+
+    # --- Groq (el que ya tenés configurado) ---
+    GROQ_API_KEY: str | None = None
+    GROQ_MODEL_NAME: str | None = None
 
     # --- MercadoPago ---
     MERCADOPAGO_TOKEN: str
 
-    # --- Cloudinary (para imágenes) ---
+    # --- Cloudinary ---
     CLOUDINARY_CLOUD_NAME: str
     CLOUDINARY_API_KEY: str
     CLOUDINARY_API_SECRET: str
 
-    # --- Email (con Gmail) ---
+    # --- Email ---
     EMAIL_SENDER: str
     EMAIL_APP_PASSWORD: str
 
@@ -51,22 +52,24 @@ class Settings(BaseSettings):
     SITE_NAME: str
 
     # --- Sentry ---
-    SENTRY_DSN: str | None = None  # Por defecto es None, ya que en desarrollo no lo usamos
+    SENTRY_DSN: str | None = None
 
-    # --- Redis ---
-    REDIS_URL: str
+    # --- Redis (opcional) ---
+    REDIS_URL: str | None = None
 
-    # Esto le dice a Pydantic que lea las variables de un archivo .env
+    # =================================================================
+    #  CONFIG
+    # =================================================================
     @staticmethod
     def get_env_file():
-        # Leemos la variable de entorno del sistema. Si no existe, usamos 'development'.
         env = os.getenv("APP_ENV", "development")
         return f".env.{env}" if env != "development" else ".env"
 
     model_config = SettingsConfigDict(
-        env_file=get_env_file.__func__(), # Llamamos a nuestra función para obtener el nombre del archivo
-        env_file_encoding='utf-8'
+        env_file=get_env_file.__func__(),
+        env_file_encoding="utf-8"
     )
 
-# Creamos una única instancia que vamos a importar en todo el proyecto
+
+# Instancia global
 settings = Settings()
