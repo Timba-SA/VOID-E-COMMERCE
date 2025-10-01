@@ -7,14 +7,18 @@ const Footer = () => {
     <footer className="main-footer">
       <div className="footer-content">
         
+        {/* --- ACÁ ESTÁ LA MAGIA, FIERA --- */}
         <div className="footer-column">
-          <h4>SHOP</h4>
+          <h4>SOCIAL MEDIA</h4>
           <ul>
-            <li><Link to="/catalog/menswear">Menswear</Link></li>
-            <li><Link to="/catalog/womenswear">Womenswear</Link></li>
-            <li><Link to="/catalog/all">All</Link></li>
+            {/* OJO: Te puse links de ejemplo, metele las URLs posta de tus redes */}
+            <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+            <li><a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a></li>
+            <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+            <li><a href="https://spotify.com" target="_blank" rel="noopener noreferrer">Spotify</a></li>
           </ul>
         </div>
+        {/* --- FIN DE LA MAGIA --- */}
 
         <div className="footer-column">
           <h4>INFO</h4>
@@ -38,12 +42,7 @@ const Footer = () => {
       </div>
       <div className="footer-bottom">
         <p>© 2025 VOID. Todos los derechos reservados.</p>
-        <div className="footer-social-links">
-            <a>INSTAGRAM</a>
-            <a>TIKTOK</a>
-            <a>FACEBOOK</a>
-            <a>SPOTIFY</a>
-        </div>
+        {/* Y de acá volaron los links de redes porque ya no van más */}
       </div>
     </footer>
   );

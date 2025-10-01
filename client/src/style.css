@@ -216,6 +216,7 @@ main {
     padding: 2rem 0;
     border-top: 1px solid #eee;
     margin-left: 2rem;
+    display: none;
 }
 
 .dropdown-nav-secondary ul {
@@ -245,7 +246,9 @@ main {
 .footer-image.left img { object-position: 70% center; } .footer-image.right img { object-position: 30% center; }
 .footer-image img { width: 100%; height: 100%; object-fit: cover; }
 .footer-text { position: absolute; top: 75%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; font-size: 55px; font-weight: 50; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.01em; text-transform: uppercase; }
-
+.dropdown-nav-secondary {
+    display: none;
+}
 /* =================================================================== */
 /* 5. FOOTER
 /* =================================================================== */
@@ -709,6 +712,7 @@ main {
 }
 @media (max-width: 992px) {
     .dropdown-menu { width: 70vw; }
+    
     .nav-right a:not(:last-child), .search-container { display: none; }
     .hero-section { flex-direction: column; height: auto; padding: 2rem 1rem; }
     .hero-image-left, .hero-image-right { width: 100%; height: auto; margin: 0; max-height: 70vh; }
@@ -722,6 +726,13 @@ main {
     }
     .product-info-panel-full {
         padding-left: 0;
+    }
+    .dropdown-nav-secondary {
+        display: block; /* ¡Y acá los hacemos visibles de nuevo! */
+        margin-top: 2rem;
+        padding-top: 2rem;
+        margin-left: 2rem;
+        border-top: 1px solid #eee;
     }
 }
 @media (max-width: 768px) {
@@ -1082,7 +1093,7 @@ main {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   margin: 0;
-  text-.shadow: 0 2px 10px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .about-content {
