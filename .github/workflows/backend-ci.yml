@@ -33,5 +33,5 @@ jobs:
         # contenedor 'backend' que ya está corriendo.
         # El flag -T es para que no se queje de que no hay una terminal interactiva.
         run: >
-          docker-compose exec -T backend
+          docker compose exec -T backend
           python -m pytest
