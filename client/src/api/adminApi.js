@@ -77,10 +77,9 @@ export const getExpensesByCategoryAPI = async () => {
   }
 };
 
-// --- Product & Variant Management (¡ACÁ ESTÁ LO NUEVO!) ---
+// --- Product & Variant Management ---
 export const getProductVariantsAPI = async (productId) => {
   try {
-    // Usamos la API pública de productos para obtener el producto y sus variantes
     const response = await axiosClient.get(`/products/${productId}`);
     return response.data;
   } catch (error) {
@@ -99,10 +98,11 @@ export const addVariantAPI = async (productId, variantData) => {
   }
 }
 
+// --- ¡ACÁ ESTÁ LA FUNCIÓN CORREGIDA! ---
 export const deleteVariantAPI = async (variantId) => {
   try {
-    // Ojo que esta ruta puede variar según tu backend, la ajustamos si es necesario
-    const response = await axiosClient.delete(`/admin/products/variants/${variantId}`);
+    // La ruta correcta que creamos en el backend
+    const response = await axiosClient.delete(`/products/variants/${variantId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting variant:', error.response?.data?.detail || error.message);

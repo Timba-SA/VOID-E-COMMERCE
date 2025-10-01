@@ -5,7 +5,7 @@ from typing import List, Optional
 
 # Terceros (FastAPI, SQLAlchemy, etc.)
 from fastapi import (
-    APIRouter, Depends, HTTPException, Query, status, 
+    APIRouter, Depends, HTTPException, Query, status,
     File, UploadFile, Form
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,14 +29,14 @@ router = APIRouter(
 # =======================================================================
 @router.get("/", response_model=List[product_schemas.Product], summary="Obtener una lista filtrada de productos")
 async def get_products(
-    db: AsyncSession = Depends(get_db), 
+    db: AsyncSession = Depends(get_db),
     q: Optional[str] = Query(None, description="Término de búsqueda para nombre"),
     precio_min: Optional[float] = Query(None, ge=0),
     precio_max: Optional[float] = Query(None, ge=0),
-    categoria_id: Optional[str] = Query(None, description="IDs de categoría separados por comas (ej: 1,3,5)"), 
-    talle: Optional[str] = Query(None, description="Talles separados por comas (ej: S,M,L)"), 
-    color: Optional[str] = Query(None, description="Colores separados por comas (ej: Rojo,Azul)"), 
-    skip: int = Query(0, ge=0), 
+    categoria_id: Optional[str] = Query(None, description="IDs de categoría separados por comas (ej: 1,3,5)"),
+    talle: Optional[str] = Query(None, description="Talles separados por comas (ej: S,M,L)"),
+    color: Optional[str] = Query(None, description="Colores separados por comas (ej: Rojo,Azul)"),
+    skip: int = Query(0, ge=0),
     limit: int = Query(12, ge=1, le=100),
     sort_by: Optional[str] = Query(None, description="Opciones: precio_asc, precio_desc, nombre_asc, nombre_desc")
 ):
@@ -45,7 +45,7 @@ async def get_products(
     if q: query = query.filter(Producto.nombre.ilike(f"%{q}%"))
     if precio_min is not None: query = query.where(Producto.precio >= precio_min)
     if precio_max is not None: query = query.where(Producto.precio <= precio_max)
-    
+
     if categoria_id:
         try:
             id_list = [int(i.strip()) for i in categoria_id.split(',')]
@@ -53,13 +53,12 @@ async def get_products(
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato de 'categoria_id' es inválido. Deben ser números separados por comas.")
 
-    # Lógica mejorada para evitar joins duplicados
     needs_variant_join = False
     if talle:
         talles = [t.strip() for t in talle.split(',')]
         query = query.join(Producto.variantes).filter(VarianteProducto.tamanio.in_(talles))
-        needs_variant_join = True # Marcamos que ya hicimos el join
-    
+        needs_variant_join = True
+
     if color:
         colors = [c.strip() for c in color.split(',')]
         if not needs_variant_join:
@@ -71,37 +70,31 @@ async def get_products(
         elif sort_by == "precio_desc": query = query.order_by(Producto.precio.desc())
         elif sort_by == "nombre_asc": query = query.order_by(Producto.nombre.asc())
         elif sort_by == "nombre_desc": query = query.order_by(Producto.nombre.desc())
-        
+
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     products = result.scalars().unique().all()
     return products
 
-# =======================================================================
-# ENDPOINT QUE FALTABA PARA OBTENER UN SOLO PRODUCTO
-# =======================================================================
 @router.get("/{product_id}", response_model=product_schemas.Product, summary="Obtener un producto por su ID")
 async def get_product_by_id(
-    product_id: int, 
+    product_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Producto).options(
         joinedload(Producto.variantes)
     ).where(Producto.id == product_id)
-    
+
     result = await db.execute(query)
     product = result.scalars().unique().first()
-    
+
     if not product:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Producto con ID {product_id} no encontrado"
         )
     return product
 
-# =======================================================================
-# ENDPOINTS DE ADMIN (YA ESTABAN BIEN, SOLO SE AGREGAN SUMMARIES)
-# =======================================================================
 @router.post("/", response_model=product_schemas.Product, status_code=status.HTTP_201_CREATED, summary="Crear un nuevo producto (Solo Admins)")
 async def create_product(
     nombre: str = Form(...),
@@ -155,10 +148,9 @@ async def create_product(
 
 @router.put("/{product_id}", response_model=dict, summary="Actualizar un producto (Solo Admins)")
 async def update_product(
-    product_id: int, 
-    db: AsyncSession = Depends(get_db), 
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
     current_admin: user_schemas.UserOut = Depends(auth_services.get_current_admin_user),
-    # Campos del formulario
     nombre: Optional[str] = Form(None),
     descripcion: Optional[str] = Form(None),
     precio: Optional[float] = Form(None),
@@ -168,79 +160,58 @@ async def update_product(
     material: Optional[str] = Form(None),
     talle: Optional[str] = Form(None),
     color: Optional[str] = Form(None),
-    # Gestión de imágenes
-    images_to_delete: Optional[str] = Form(None), # URLs separadas por comas
-    image_order: Optional[str] = Form(None), # URLs separadas por comas en el orden deseado
+    images_to_delete: Optional[str] = Form(None),
+    image_order: Optional[str] = Form(None),
     new_images: Optional[List[UploadFile]] = File(None)
 ):
     product_db = await db.get(Producto, product_id, options=[joinedload(Producto.variantes)])
     if not product_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
 
-    # 1. Actualizar campos de texto
     update_data = {
-        "nombre": nombre,
-        "descripcion": descripcion,
-        "precio": precio,
-        "sku": sku,
-        "stock": stock,
-        "categoria_id": categoria_id,
-        "material": material,
-        "talle": talle,
-        "color": color
+        "nombre": nombre, "descripcion": descripcion, "precio": precio, "sku": sku,
+        "stock": stock, "categoria_id": categoria_id, "material": material,
+        "talle": talle, "color": color
     }
     for key, value in update_data.items():
         if value is not None:
             setattr(product_db, key, value)
 
-    # 2. Gestionar imágenes
     current_image_urls = product_db.urls_imagenes or []
-
-    # 2a. Eliminar imágenes marcadas
     if images_to_delete:
         urls_to_delete = [url.strip() for url in images_to_delete.split(',')]
         await cloudinary_service.delete_images(urls_to_delete)
         current_image_urls = [url for url in current_image_urls if url not in urls_to_delete]
 
-    # 2b. Subir nuevas imágenes
     if new_images and new_images[0].filename:
         if len(current_image_urls) + len(new_images) > 3:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un producto no puede tener más de 3 imágenes en total.")
-        
         new_image_urls = await cloudinary_service.upload_images(new_images)
         current_image_urls.extend(new_image_urls)
 
-    # 2c. Reordenar imágenes si se proporciona el orden
     if image_order:
         ordered_urls = [url.strip() for url in image_order.split(',')]
-        # Asegurarse de que todas las URLs ordenadas son válidas y están presentes
-        # Esto también añade las nuevas imágenes si no están en la lista de orden
         final_urls = ordered_urls + [url for url in current_image_urls if url not in ordered_urls]
         current_image_urls = final_urls
 
     product_db.urls_imagenes = current_image_urls
-
-    # 3. Guardar en la base de datos
     db.add(product_db)
     await db.commit()
-    
     return {"message": "Producto actualizado exitosamente"}
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_200_OK, summary="Eliminar un producto (Solo Admins)")
 async def delete_product(
-    product_id: int, 
-    db: AsyncSession = Depends(get_db), 
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
     current_admin: user_schemas.UserOut = Depends(auth_services.get_current_admin_user)
 ):
     product_db = await db.get(Producto, product_id)
     if not product_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
 
-    # SQLAlchemy se encarga de borrar en cascada si está bien configurado en el modelo
     await db.delete(product_db)
     await db.commit()
-    
     return {"message": "Producto eliminado exitosamente"}
 
 
@@ -257,9 +228,29 @@ async def create_variant_for_product(
 
     variant_data = variant_in.model_dump()
     new_variant = VarianteProducto(producto_id=product_id, **variant_data)
-    
     db.add(new_variant)
     await db.commit()
     await db.refresh(new_variant)
-    
     return new_variant
+
+# --- ¡ACÁ ESTÁ EL CÓDIGO NUEVO Y CORRECTO! ---
+@router.delete("/variants/{variant_id}", status_code=status.HTTP_200_OK, summary="Eliminar una variante de producto (Solo Admins)")
+async def delete_variant(
+    variant_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_admin: user_schemas.UserOut = Depends(auth_services.get_current_admin_user)
+):
+    """
+    Busca una variante por su ID y la elimina de la base de datos.
+    """
+    variant_db = await db.get(VarianteProducto, variant_id)
+    if not variant_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Variante con ID {variant_id} no encontrada."
+        )
+
+    await db.delete(variant_db)
+    await db.commit()
+
+    return {"message": "Variante eliminada exitosamente"}
