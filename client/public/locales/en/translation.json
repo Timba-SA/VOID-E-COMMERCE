@@ -159,5 +159,15 @@
   "admin_users_loading": "Loading users...",
   "admin_users_none": "No users to display.",
   "admin_users_update_success": "Role updated successfully.",
-  "admin_users_update_error": "Could not update role."
+  "admin_users_update_error": "Could not update role.",
+  "product_loading": "Loading product...",
+  "product_error": "Error",
+  "product_not_found": "Product not found.",
+  "product_color_label": "COLOR:",
+  "product_size_label": "SIZE:",
+  "product_add_to_bag_button": "ADD TO BAG",
+  "product_out_of_stock_button": "OUT OF STOCK",
+  "product_select_option_notification": "Please select a color and size.",
+  "product_out_of_stock_notification": "This option is out of stock.",
+  "product_no_description": "No description available."
 }

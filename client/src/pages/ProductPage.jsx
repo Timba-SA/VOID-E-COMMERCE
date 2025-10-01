@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CartContext } from '../context/CartContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { getProductById } from '../api/productsApi';
@@ -19,6 +20,7 @@ const getSafeImageUrls = (urls) => {
 };
 
 const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
+    const { t } = useTranslation();
     const { productId } = useParams();
     const { addItemToCart } = useContext(CartContext);
     const { notify } = useContext(NotificationContext);
@@ -40,7 +42,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             try {
                 const data = await getProductById(productId);
                 if (!data) {
-                    throw new Error('Producto no encontrado.');
+                    throw new Error(t('product_not_found'));
                 }
                 setProduct(data);
 
@@ -66,7 +68,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     }
                 }
             } catch (err) {
-                const errorMessage = err?.response?.data?.detail || err.message || 'No se pudo encontrar el producto.';
+                const errorMessage = err?.response?.data?.detail || err.message || t('product_not_found');
                 setError(errorMessage);
                 notify(errorMessage, 'error');
             } finally {
@@ -75,7 +77,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         };
         fetchProductData();
         window.scrollTo(0, 0);
-    }, [productId, notify]);
+    }, [productId, notify, t]);
 
     const availableColors = useMemo(() => {
         if (!product?.variantes) return [];
@@ -90,6 +92,19 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         return product.variantes.filter(v => v.color === selectedColor && v.cantidad_en_stock > 0);
     }, [product, selectedColor]);
 
+    const getColorTranslationKey = (dbColor) => {
+        const colorMapping = {
+            'negro': 'black',
+            'blanco': 'white',
+            'gris': 'grey',
+            'marrón': 'brown',
+            'beige': 'beige',
+            'azul': 'blue'
+        };
+        const lowerCaseColor = dbColor.toLowerCase();
+        return colorMapping[lowerCaseColor] || lowerCaseColor;
+    };
+
     const handleColorSelect = (color) => {
         setSelectedColor(color);
         const firstAvailableSize = product.variantes.find(v => v.color === color && v.cantidad_en_stock > 0);
@@ -98,7 +113,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
 
     const handleAddToCart = () => {
         if (!selectedColor || !selectedSize) {
-            notify("Please select a color and size.", "error");
+            notify(t('product_select_option_notification'), "error");
             return;
         }
 
@@ -107,7 +122,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         );
 
         if (!selectedVariant || selectedVariant.cantidad_en_stock <= 0) {
-            notify("This option is out of stock.", "error");
+            notify(t('product_out_of_stock_notification'), "error");
             return;
         }
 
@@ -126,9 +141,9 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         onOpenCartModal();
     };
 
-    if (loading) return <Spinner message="Loading product..." />;
-    if (error) return <div className="error-container" style={{ textAlign: 'center', padding: '5rem' }}><h1>Error: {error}</h1></div>;
-    if (!product) return <div style={{ textAlign: 'center', padding: '5rem' }}><h1>Producto no encontrado.</h1></div>;
+    if (loading) return <Spinner message={t('product_loading')} />;
+    if (error) return <div className="error-container" style={{ textAlign: 'center', padding: '5rem' }}><h1>{t('product_error')}: {error}</h1></div>;
+    if (!product) return <div style={{ textAlign: 'center', padding: '5rem' }}><h1>{t('product_not_found')}</h1></div>;
     
     const isOutOfStock = availableColors.length === 0;
     
@@ -182,26 +197,29 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     <p className="product-price">{formatPrice(product.precio)}</p>
                     
                     <div className="product-selector">
-                        <p className="selector-label">COLOR: <span>{selectedColor || 'N/A'}</span></p>
+                        <p className="selector-label">{t('product_color_label')} <span>{selectedColor ? t(`color_${getColorTranslationKey(selectedColor)}`, selectedColor) : 'N/A'}</span></p>
                         <div className="selector-buttons">
-                            {availableColors.map(color => (
-                                <button
-                                    key={color}
-                                    className={`size-button ${selectedColor === color ? 'active' : ''}`}
-                                    onClick={() => handleColorSelect(color)}
-                                >
-                                    {color}
-                                </button>
-                            ))}
+                            {availableColors.map(color => {
+                                const translationKey = getColorTranslationKey(color);
+                                return (
+                                    <button
+                                        key={color}
+                                        className={`size-button ${selectedColor === color ? 'active' : ''}`}
+                                        onClick={() => handleColorSelect(color)}
+                                    >
+                                        {t(`color_${translationKey}`, color)}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <div className="product-selector">
-                        <p className="selector-label">SIZE: <span>{selectedSize || 'N/A'}</span></p>
+                        <p className="selector-label">{t('product_size_label')} <span>{selectedSize || 'N/A'}</span></p>
                         <div className="selector-buttons">
                             {availableSizesForSelectedColor.map(variant => (
                                 <button
-                                    key={variant.id} // Usamos el ID de la variante para la key, es más seguro
+                                    key={variant.id}
                                     className={`size-button ${selectedSize === variant.tamanio ? 'active' : ''}`}
                                     onClick={() => setSelectedSize(variant.tamanio)}
                                     disabled={variant.cantidad_en_stock <= 0}
@@ -213,11 +231,11 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     </div>
 
                     <div className="product-description-full">
-                        <p>{product.descripcion || "No description available."}</p>
+                        <p>{product.descripcion || t('product_no_description')}</p>
                     </div>
                     
                     <button onClick={handleAddToCart} disabled={isOutOfStock || !selectedSize} className="add-to-cart-button">
-                        {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO BAG'}
+                        {isOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}
                     </button>
                 </div>
             </div>

@@ -159,5 +159,15 @@
   "admin_users_loading": "Cargando usuarios...",
   "admin_users_none": "No hay usuarios para mostrar.",
   "admin_users_update_success": "Rol actualizado con éxito.",
-  "admin_users_update_error": "No se pudo actualizar el rol."
+  "admin_users_update_error": "No se pudo actualizar el rol.",
+  "product_loading": "Cargando producto...",
+  "product_error": "Error",
+  "product_not_found": "Producto no encontrado.",
+  "product_color_label": "COLOR:",
+  "product_size_label": "TALLE:",
+  "product_add_to_bag_button": "AÑADIR A LA BOLSA",
+  "product_out_of_stock_button": "SIN STOCK",
+  "product_select_option_notification": "Por favor, selecciona un color y talle.",
+  "product_out_of_stock_notification": "Esta opción está agotada.",
+  "product_no_description": "No hay descripción disponible."
 }
