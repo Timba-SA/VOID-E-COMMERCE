@@ -46,6 +46,10 @@ async def test_webhook_success_creates_order_and_updates_stock(
     # 3. Reemplazamos el método 'payment' del SDK para que devuelva nuestro doble.
     mocker.patch("routers.checkout_router.sdk.payment", return_value=mock_payment_object)
     # =======================================================================
+    # Le decimos a mocker: "Cuando alguien intente llamar a '.delay()'
+    # en la tarea de Celery, no hagas nada y seguí de largo".
+    mocker.patch("routers.checkout_router.enviar_email_confirmacion_compra.delay")
+    # ==========================================================
 
     response = await client.post("/api/checkout/webhook", json=mock_webhook_data)
 
