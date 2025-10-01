@@ -1,91 +1,37 @@
-# .github/workflows/backend-ci.yml
-
-name: Backend CI - Tests
+name: Backend CI - Docker Compose Tests
 
 on:
   push:
-    branches: [ "master", "develop" ] # <-- Corregido a "master"
+    branches: [ "master", "develop" ]
   pull_request:
-    branches: [ "master", "develop" ] # <-- Corregido a "master"
+    branches: [ "master", "develop" ]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
-
-    services:
-          redis:
-            image: redis:7-alpine # Usamos la misma imagen que en nuestro docker-compose
-            options: >-
-              --health-cmd "redis-cli ping"
-              --health-interval 10s
-              --health-timeout 5s
-              --health-retries 5
-
-    defaults:
-      run:
-        working-directory: ./server
 
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Preparar archivo .env para tests
+        run: cp server/.env.example server/.env
 
-      - name: Instalar dependencias
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+      - name: Levantar servicios con Docker Compose
+        # Este comando usa nuestro docker-compose.yml de la raíz.
+        # Levanta el backend y redis en segundo plano (-d) y reconstruye las imágenes (--build).
+        run: docker-compose up --build -d backend redis
+      
+      - name: Esperar a que los servicios estén listos
+        # Damos 10 segundos de changüí para asegurarnos de que Redis y la app
+        # hayan tenido tiempo de inicializarse por completo.
+        run: sleep 10
 
-      # ==========================================================
-      # ¡PASO DE DEBUG TEMPORAL!
-      # Este paso va a intentar conectarse a Redis por su cuenta.
-      # ==========================================================
-      - name: Debuggear la conexión con Redis
-        run: |
-          echo "Instalando herramientas de red para ver qué pasa..."
-          sudo apt-get update && sudo apt-get install -y redis-tools
-          
-          echo "--- Intentando conectar a 'localhost' ---"
-          redis-cli -h localhost ping || echo "===> FALLÓ la conexión a localhost"
-          
-          echo "--- Intentando conectar a 'redis' (nombre del servicio) ---"
-          redis-cli -h redis ping || echo "===> FALLÓ la la conexión a redis"
-
-      - name: Correr Tests con Pytest
-        # ==========================================================
-        # ¡AQUÍ ESTÁ LA MAGIA!
-        # Le damos al robot todas las variables que necesita, pero con
-        # valores de prueba que no son secretos.
-        # ==========================================================
-        env:
-          PYTHONUTF8: "1"
-          APP_ENV: "test"
-          FRONTEND_URL: "http://localhost:3000"
-          BACKEND_URL: "http://test"
-          # Le damos una URL de mentira para que no se queje.
-          REDIS_URL: "redis://redis:6379"
-          # Para los tests de DB SQL, usamos una base de datos en memoria,
-          # así que esta URL es perfecta y no necesita un servidor real.
-          DB_SQL_URI: "sqlite+aiosqlite:///:memory:"
-          # La DB NoSQL se mockea, pero la variable debe existir.
-          DB_NOSQL_URI: "mongodb://localhost:27017/testdb"
-          # El resto son simplemente valores falsos para que la app no explote.
-          SECRET_KEY: "este-es-un-secreto-de-prueba-para-ci-muy-largo"
-          ALGORITHM: "HS256"
-          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
-          OPENROUTER_API_KEY: "sk-test-key"
-          OPENROUTER_MODEL: "test-model"
-          MERCADOPAGO_TOKEN: "mp-test-token"
-          CLOUDINARY_CLOUD_NAME: "test-cloud"
-          CLOUDINARY_API_KEY: "test-key"
-          CLOUDINARY_API_SECRET: "test-secret"
-          EMAIL_SENDER: "test@example.com"
-          EMAIL_APP_PASSWORD: "test-password"
-          # Estas las agregué porque te salieron en el error, significan
-          # que tu settings.py las necesita.
-          OPENROUTER_API_URL: "https://test.url"
-          SITE_NAME: "Test Site"
-        run: python -m pytest
+      - name: Correr Tests dentro del contenedor del Backend
+        # ¡ACÁ ESTÁ LA MAGIA!
+        # Usamos 'docker-compose exec' para ejecutar un comando DENTRO del
+        # contenedor 'backend' que ya está corriendo.
+        # El flag -T es para que no se queje de que no hay una terminal interactiva.
+        run: >
+          docker-compose exec -T backend
+          python -m pytest
