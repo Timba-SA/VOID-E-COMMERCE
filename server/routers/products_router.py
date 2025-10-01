@@ -1,5 +1,5 @@
 # ==========================================
-#  IMPORTS ORDENADOS PARA MÁS PROLIJIDAD
+#  IMPORTS ORDENADOS Y CORREGIDOS
 # ==========================================
 from typing import List, Optional
 
@@ -11,6 +11,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import flag_modified # <-- ¡IMPORTAMOS AL DESPERTADOR!
 
 # Módulos de tu aplicación
 from database.database import get_db
@@ -24,9 +25,7 @@ router = APIRouter(
     tags=["Products"]
 )
 
-# =======================================================================
-# VERSIÓN ÚNICA Y FUNCIONAL DE GET_PRODUCTS (SIN DUPLICADOS)
-# =======================================================================
+# ... (El resto de los endpoints GET, POST, DELETE de productos y variantes quedan exactamente igual que los tenías) ...
 @router.get("/", response_model=List[product_schemas.Product], summary="Obtener una lista filtrada de productos")
 async def get_products(
     db: AsyncSession = Depends(get_db),
@@ -145,7 +144,7 @@ async def create_product(
     created_product = result.scalars().unique().first()
     return created_product
 
-
+# --- ¡ACÁ ESTÁ LA FUNCIÓN CORREGIDA! ---
 @router.put("/{product_id}", response_model=dict, summary="Actualizar un producto (Solo Admins)")
 async def update_product(
     product_id: int,
@@ -164,39 +163,47 @@ async def update_product(
     image_order: Optional[str] = Form(None),
     new_images: Optional[List[UploadFile]] = File(None)
 ):
-    product_db = await db.get(Producto, product_id, options=[joinedload(Producto.variantes)])
+    product_db = await db.get(Producto, product_id)
     if not product_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
 
-    update_data = {
+    update_data = {k: v for k, v in {
         "nombre": nombre, "descripcion": descripcion, "precio": precio, "sku": sku,
         "stock": stock, "categoria_id": categoria_id, "material": material,
         "talle": talle, "color": color
-    }
+    }.items() if v is not None}
     for key, value in update_data.items():
-        if value is not None:
-            setattr(product_db, key, value)
+        setattr(product_db, key, value)
 
-    current_image_urls = product_db.urls_imagenes or []
+    current_image_urls = product_db.urls_imagenes.copy() if product_db.urls_imagenes else []
+
     if images_to_delete:
-        urls_to_delete = [url.strip() for url in images_to_delete.split(',')]
-        await cloudinary_service.delete_images(urls_to_delete)
-        current_image_urls = [url for url in current_image_urls if url not in urls_to_delete]
+        urls_to_delete = [url.strip() for url in images_to_delete.split(',') if url.strip()]
+        if urls_to_delete:
+            await cloudinary_service.delete_images(urls_to_delete)
+            current_image_urls = [url for url in current_image_urls if url not in urls_to_delete]
 
     if new_images and new_images[0].filename:
         if len(current_image_urls) + len(new_images) > 3:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un producto no puede tener más de 3 imágenes en total.")
-        new_image_urls = await cloudinary_service.upload_images(new_images)
-        current_image_urls.extend(new_image_urls)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un producto no puede tener más de 3 imágenes.")
+        new_urls = await cloudinary_service.upload_images(new_images)
+        current_image_urls.extend(new_urls)
 
     if image_order:
         ordered_urls = [url.strip() for url in image_order.split(',')]
-        final_urls = ordered_urls + [url for url in current_image_urls if url not in ordered_urls]
+        final_urls = [url for url in ordered_urls if url in current_image_urls]
+        final_urls.extend([url for url in current_image_urls if url not in final_urls])
         current_image_urls = final_urls
 
     product_db.urls_imagenes = current_image_urls
+    
+    # --- ¡LA LÍNEA MÁGICA QUE ARREGLA TODO! ---
+    # Le decimos a la base de datos que sí o sí mire los cambios en esta lista.
+    flag_modified(product_db, "urls_imagenes")
+    
     db.add(product_db)
     await db.commit()
+    
     return {"message": "Producto actualizado exitosamente"}
 
 
@@ -209,7 +216,6 @@ async def delete_product(
     product_db = await db.get(Producto, product_id)
     if not product_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-
     await db.delete(product_db)
     await db.commit()
     return {"message": "Producto eliminado exitosamente"}
@@ -233,16 +239,13 @@ async def create_variant_for_product(
     await db.refresh(new_variant)
     return new_variant
 
-# --- ¡ACÁ ESTÁ EL CÓDIGO NUEVO Y CORRECTO! ---
+
 @router.delete("/variants/{variant_id}", status_code=status.HTTP_200_OK, summary="Eliminar una variante de producto (Solo Admins)")
 async def delete_variant(
     variant_id: int,
     db: AsyncSession = Depends(get_db),
     current_admin: user_schemas.UserOut = Depends(auth_services.get_current_admin_user)
 ):
-    """
-    Busca una variante por su ID y la elimina de la base de datos.
-    """
     variant_db = await db.get(VarianteProducto, variant_id)
     if not variant_db:
         raise HTTPException(

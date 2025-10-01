@@ -1,3 +1,5 @@
+// En client/src/pages/HomePage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -12,7 +14,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAndAnimate = async () => {
       try {
-        const fetchedProducts = await getProducts({ limit: 6 }); 
+        const fetchedProducts = await getProducts({ limit: 6 });
         setProducts(fetchedProducts);
       } catch (error) {
         console.error("Error al cargar los productos:", error);
@@ -31,7 +33,7 @@ const HomePage = () => {
 
   useEffect(() => {
     if (products.length > 0) {
-      gsap.fromTo(".product-card",
+      gsap.fromTo(".product-card-home", // Apuntamos a la nueva clase
         { opacity: 0, y: 50 },
         {
           opacity: 1,
@@ -40,7 +42,7 @@ const HomePage = () => {
           stagger: 0.2,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".product-grid",
+            trigger: ".product-grid-home",
             start: "top 80%",
           }
         }
@@ -60,16 +62,19 @@ const HomePage = () => {
       </section>
 
       <section className="new-arrivals">
-        {/* --- ¡ACÁ ESTÁ EL CAMBIO, CAMPEÓN! --- */}
         <div className="title-the-new-container">
             <h2 className="title-the-new-text">THE NEW</h2>
             <div className="title-the-new-line"></div>
         </div>
-        {/* --- FIN DEL CAMBIO --- */}
 
-        <div className="product-grid">
+        {/* --- ¡ACÁ ESTÁ EL CAMBIO IMPORTANTE! --- */}
+        <div className="product-grid product-grid-home">
           {products.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              displayMode="imageOnly" // <-- LA ORDEN SECRETA
+            />
           ))}
         </div>
       </section>
