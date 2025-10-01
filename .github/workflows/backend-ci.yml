@@ -12,6 +12,15 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+          redis:
+            image: redis:7-alpine # Usamos la misma imagen que en nuestro docker-compose
+            options: >-
+              --health-cmd "redis-cli ping"
+              --health-interval 10s
+              --health-timeout 5s
+              --health-retries 5
+
     defaults:
       run:
         working-directory: ./server
