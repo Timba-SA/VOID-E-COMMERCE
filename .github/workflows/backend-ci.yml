@@ -40,6 +40,8 @@ jobs:
           APP_ENV: "test"
           FRONTEND_URL: "http://localhost:3000"
           BACKEND_URL: "http://test"
+          # Le damos una URL de mentira para que no se queje.
+          REDIS_URL: "redis://localhost:6379"
           # Para los tests de DB SQL, usamos una base de datos en memoria,
           # así que esta URL es perfecta y no necesita un servidor real.
           DB_SQL_URI: "sqlite+aiosqlite:///:memory:"
