@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getCategories } from '../../api/categoriesApi';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { CartContext } from '../../context/CartContext';
+import { useTranslation } from 'react-i18next';
 
 const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
@@ -10,12 +11,13 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentSubCategory = location.pathname.split('/')[2] || '';
+  
+  const { t } = useTranslation();
+  const { isAuthenticated, user, isAuthLoading } = useAuthStore();
+  const { itemCount } = useContext(CartContext);
 
   const [activeCategory, setActiveCategory] = useState('menswear');
   const [categories, setCategories] = useState({ womenswear: [], menswear: [] });
-
-  const { isAuthenticated, user, isAuthLoading } = useAuthStore();
-  const { itemCount } = useContext(CartContext);
 
   useEffect(() => {
     const fetchAndOrganizeCategories = async () => {
@@ -29,9 +31,17 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
         const menswear = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
         const womenswear = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
 
+        // --- ACÁ ESTÁ EL CAMBIO ---
+        // Ahora, en vez de usar el nombre directo, lo traducimos
         setCategories({
-          womenswear: womenswear.map(c => ({ name: c.nombre.toUpperCase(), path: `/catalog/${c.nombre.toLowerCase()}` })),
-          menswear: menswear.map(c => ({ name: c.nombre.toUpperCase(), path: `/catalog/${c.nombre.toLowerCase()}` }))
+          womenswear: womenswear.map(c => ({
+            name: t(`category_${c.nombre.toLowerCase()}`),
+            path: `/catalog/${c.nombre.toLowerCase()}`
+          })),
+          menswear: menswear.map(c => ({
+            name: t(`category_${c.nombre.toLowerCase()}`),
+            path: `/catalog/${c.nombre.toLowerCase()}`
+          }))
         });
 
       } catch (error) {
@@ -42,7 +52,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
     if (isOpen) {
         fetchAndOrganizeCategories();
     }
-  }, [isOpen]);
+  }, [isOpen, t]); // Agregamos `t` a las dependencias para que se actualice al cambiar de idioma
 
   const handleNavigateAndClose = (path) => {
     navigate(path);
@@ -56,7 +66,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
       setActiveCategory(category);
     }
   };
-
+  
   const handleSearchClick = () => {
     onClose();
     onOpenSearch();
@@ -86,25 +96,13 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
       <div className={`overlay ${isOpen ? 'active' : ''}`} onClick={onClose} />
       
       <aside className={`dropdown-menu ${isOpen ? 'open' : ''}`}>
-        {isOpen && logoPosition && (
-          <div style={phantomLogoStyle}>
-            VOID
-          </div>
-        )}
+        {isOpen && logoPosition && <div style={phantomLogoStyle}>VOID</div>}
 
         <div className="dropdown-header">
-          <button
-            className={`close-btn ${isOpen ? 'open' : ''}`}
-            aria-label="Cerrar menú"
-            onClick={onClose}
-          >
-            <span/>
-            <span/>
-            <span/>
+          <button className={`close-btn ${isOpen ? 'open' : ''}`} aria-label="Cerrar menú" onClick={onClose}>
+            <span/><span/><span/>
           </button>
-          <Link to="/" className="dropdown-logo" onClick={onClose} style={{ visibility: 'hidden' }}>
-              VOID
-          </Link>
+          <Link to="/" className="dropdown-logo" onClick={onClose} style={{ visibility: 'hidden' }}>VOID</Link>
         </div>
 
         <div className="dropdown-content">
@@ -112,19 +110,13 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
             <nav className="dropdown-nav-left">
               <ul>
                 <li>
-                  <div 
-                    onClick={() => handleMainCategoryClick('womenswear')} 
-                    className={`category-link ${activeCategory === 'womenswear' ? 'active-category' : ''}`}
-                  >
-                    WOMENSWEAR
+                  <div onClick={() => handleMainCategoryClick('womenswear')} className={`category-link ${activeCategory === 'womenswear' ? 'active-category' : ''}`}>
+                    {t('menu_womenswear')}
                   </div>
                 </li>
                 <li>
-                  <div 
-                    onClick={() => handleMainCategoryClick('menswear')} 
-                    className={`category-link ${activeCategory === 'menswear' ? 'active-category' : ''}`}
-                  >
-                    MENSWEAR
+                  <div onClick={() => handleMainCategoryClick('menswear')} className={`category-link ${activeCategory === 'menswear' ? 'active-category' : ''}`}>
+                    {t('menu_menswear')}
                   </div>
                 </li>
               </ul>
@@ -138,7 +130,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
                           onClick={() => handleNavigateAndClose(`/catalog/${activeCategory}`)} 
                           className="view-all-link"
                       >
-                          VIEW ALL {activeCategory.toUpperCase()}
+                          {t(`menu_view_all_${activeCategory}`)}
                       </Link>
                   </li>
                   
@@ -160,21 +152,21 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
 
           <nav className="dropdown-nav-secondary">
             <ul>
-              <li><button onClick={handleSearchClick} className="category-link">SEARCH</button></li>
-              <li><a href="#" onClick={(e) => e.preventDefault()} className="category-link">LANGUAGE</a></li>
+              <li><button onClick={handleSearchClick} className="category-link">{t('nav_search')}</button></li>
+              <li><a href="#" onClick={(e) => e.preventDefault()} className="category-link">{t('nav_language')}</a></li>
               {!isAuthLoading && (
                 isAuthenticated ? (
                   <>
                     {user?.role === 'admin' && (
-                      <li><Link to="/admin" onClick={onClose} className="category-link">ADMIN</Link></li>
+                      <li><Link to="/admin" onClick={onClose} className="category-link">{t('nav_admin')}</Link></li>
                     )}
-                    <li><Link to="/account" onClick={onClose} className="category-link">ACCOUNT</Link></li>
+                    <li><Link to="/account" onClick={onClose} className="category-link">{t('nav_account')}</Link></li>
                   </>
                 ) : (
-                  <li><Link to="/login" onClick={onClose} className="category-link">LOGIN</Link></li>
+                  <li><Link to="/login" onClick={onClose} className="category-link">{t('nav_login')}</Link></li>
                 )
               )}
-              <li><Link to="/cart" onClick={onClose} className="category-link">BAG ({itemCount})</Link></li>
+              <li><Link to="/cart" onClick={onClose} className="category-link">{t('nav_bag')} ({itemCount})</Link></li>
             </ul>
           </nav>
 
@@ -183,7 +175,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
               <div className="footer-image left"><img src="/img/dropdownIzquierda.jpg" alt="Carretera" /></div>
               <div className="footer-image right"><img src="/img/dropdownDerecha.jpg" alt="Autopista" /></div>
             </div>
-            <h3 className="footer-text">FIND YOUR OWN ROAD</h3>
+            <h3 className="footer-text">{t('menu_footer_text')}</h3>
           </div>
         </div>
       </aside>

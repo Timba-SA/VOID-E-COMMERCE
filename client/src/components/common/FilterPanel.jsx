@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
 const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
+  const { t } = useTranslation();
   const [priceRange, setPriceRange] = useState([initialFilters.precio_min, initialFilters.precio_max]);
   const [selectedSizes, setSelectedSizes] = useState(initialFilters.talle || []);
   const [selectedColors, setSelectedColors] = useState(initialFilters.color || []);
@@ -61,7 +63,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
   return (
     <div className={`filter-panel ${isOpen ? 'open' : ''}`}>
       <div className="filter-panel-header">
-        <h2 className="filter-panel-title">FILTERS</h2>
+        <h2 className="filter-panel-title">{t('filter_filters')}</h2>
         <button className="filter-panel-close-btn" onClick={onClose}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M1 1L17 17M17 1L1 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -72,7 +74,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
       <div className="filter-panel-content">
         <div className="filter-section active">
           <div className="filter-section-header">
-            <span className="filter-section-title">SORT BY</span>
+            <span className="filter-section-title">{t('filter_sort_by')}</span>
           </div>
           <div className="filter-section-body">
             <select
@@ -80,17 +82,17 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
               value={initialFilters.sort_by}
               onChange={handleSortChange}
             >
-              <option value="nombre_asc">Name (A-Z)</option>
-              <option value="nombre_desc">Name (Z-A)</option>
-              <option value="precio_asc">Price (Low to High)</option>
-              <option value="precio_desc">Price (High to Low)</option>
+              <option value="nombre_asc">{t('filter_name_asc')}</option>
+              <option value="nombre_desc">{t('filter_name_desc')}</option>
+              <option value="precio_asc">{t('filter_price_asc')}</option>
+              <option value="precio_desc">{t('filter_price_desc')}</option>
             </select>
           </div>
         </div>
 
         <div className="filter-section active">
           <div className="filter-section-header">
-            <span className="filter-section-title">SIZE</span>
+            <span className="filter-section-title">{t('filter_size')}</span>
           </div>
           <div className="filter-section-body">
             {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
@@ -110,7 +112,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
 
         <div className="filter-section active">
           <div className="filter-section-header">
-            <span className="filter-section-title">PRICE</span>
+            <span className="filter-section-title">{t('filter_price')}</span>
           </div>
           <div className="filter-section-body price-filter-body">
             <div className="price-display">
@@ -135,7 +137,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
 
         <div className="filter-section active">
           <div className="filter-section-header">
-            <span className="filter-section-title">COLOR</span>
+            <span className="filter-section-title">{t('filter_color')}</span>
           </div>
           <div className="filter-section-body">
             {availableColors.map(color => (
@@ -146,7 +148,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
                   value={color}
                   checked={selectedColors.includes(color)}
                   onChange={handleColorChange}
-                /> {color}
+                /> {t(`color_${color.toLowerCase()}`)}
                 <span className="checkmark"></span>
               </label>
             ))}

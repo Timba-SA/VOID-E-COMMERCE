@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getProducts } from '../api/productsApi';
 import { getCategories } from '../api/categoriesApi';
 import FilterPanel from '@/components/common/FilterPanel.jsx';
@@ -20,6 +21,7 @@ const ProductCardSkeleton = () => (
 
 const CatalogPage = () => {
     const { categoryName } = useParams();
+    const { t } = useTranslation();
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -110,13 +112,12 @@ const CatalogPage = () => {
     const toggleFilterPanel = () => setIsFilterPanelOpen(!isFilterPanelOpen);
 
     const getPageTitle = () => {
-        if (!categoryName) return 'ALL PRODUCTS';
-        if (categoryName.toLowerCase() === 'menswear') return 'MENSWEAR';
-        if (categoryName.toLowerCase() === 'womenswear') return 'WOMENSWEAR';
-        return categoryName.replace('-', ' ').toUpperCase();
+        if (!categoryName) return t('catalog_all_products');
+        if (categoryName.toLowerCase() === 'menswear') return t('catalog_menswear');
+        if (categoryName.toLowerCase() === 'womenswear') return t('catalog_womenswear');
+        return t(`category_${categoryName.toLowerCase()}`, categoryName.replace('-', ' ').toUpperCase());
     };
 
-    // Placeholder para los números de página
     const pageNumbers = [1, 2, 3, 4, 5]; 
 
     return (
@@ -124,7 +125,7 @@ const CatalogPage = () => {
             <main className="catalog-container">
                 <div className="catalog-header">
                     <h1 className="catalog-title">{getPageTitle()}</h1>
-                    <button onClick={toggleFilterPanel} className="filters-link">FILTERS &gt;</button>
+                    <button onClick={toggleFilterPanel} className="filters-link">{t('catalog_filters')} &gt;</button>
                 </div>
 
                 {isLoading ? (
@@ -143,7 +144,7 @@ const CatalogPage = () => {
 
                 <div className="pagination-controls">
                     <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-arrow">
-                        &lt; PREVIOUS
+                        &lt; {t('catalog_previous')}
                     </button>
                     <div className="pagination-numbers">
                         {pageNumbers.map(number => (
@@ -157,7 +158,7 @@ const CatalogPage = () => {
                         ))}
                     </div>
                     <button onClick={() => handlePageChange(currentPage + 1)} disabled={!isNextPageAvailable} className="pagination-arrow">
-                        NEXT &gt;
+                        {t('catalog_next')} &gt;
                     </button>
                 </div>
             </main>

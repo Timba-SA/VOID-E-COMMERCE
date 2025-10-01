@@ -1,38 +1,35 @@
-// En FRONTEND/src/components/common/Footer.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="main-footer">
       <div className="footer-content">
         
-        {/* --- ACÁ ESTÁ LA MAGIA, FIERA --- */}
         <div className="footer-column">
-          <h4>SOCIAL MEDIA</h4>
+          <h4>{t('footer_social')}</h4>
           <ul>
-            {/* OJO: Te puse links de ejemplo, metele las URLs posta de tus redes */}
             <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
             <li><a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a></li>
             <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
             <li><a href="https://spotify.com" target="_blank" rel="noopener noreferrer">Spotify</a></li>
           </ul>
         </div>
-        {/* --- FIN DE LA MAGIA --- */}
 
         <div className="footer-column">
-          <h4>INFO</h4>
+          <h4>{t('footer_info')}</h4>
           <ul>
-            <li><Link to="/about">About Us</Link></li>
-            <li><Link to="/contact">Contact</Link></li>
-            <li><a href="#">Shipping</a></li>
-            <li><a href="#">Returns</a></li>
+            <li><Link to="/about">{t('footer_about')}</Link></li>
+            <li><Link to="/contact">{t('footer_contact')}</Link></li>
           </ul>
         </div>
 
         <div className="footer-column subscribe-column">
-          <h4>JOIN THE VOID</h4>
-          <p>Suscribite a nuestro newsletter y sé el primero en enterarte de todo.</p>
+          <h4>{t('footer_join')}</h4>
+          <p>{t('footer_subscribe_text')}</p>
           <form className="subscribe-form">
             <input type="email" placeholder="Tu email" />
             <button type="submit">→</button>
@@ -41,8 +38,7 @@ const Footer = () => {
 
       </div>
       <div className="footer-bottom">
-        <p>© 2025 VOID. Todos los derechos reservados.</p>
-        {/* Y de acá volaron los links de redes porque ya no van más */}
+        <p>{t('footer_copyright')}</p>
       </div>
     </footer>
   );
