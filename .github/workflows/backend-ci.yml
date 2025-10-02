@@ -14,36 +14,18 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Levantar servicios en segundo plano
-        run: docker compose up --build -d
+      - name: Levantar servicios con Docker Compose
+        # ==========================================================
+        # ¡EL ÚNICO CAMBIO NECESARIO ESTÁ ACÁ!
+        # Le pasamos el archivo de entorno AL COMANDO 'up'.
+        # Esto asegura que el contenedor 'backend' arranque con la nafta puesta.
+        # ==========================================================
+        run: docker compose --env-file .env.example up --build -d
 
       - name: Esperar a que los servicios estén listos
         run: sleep 15
 
       - name: Correr Tests dentro del contenedor
-        # Este es el método más robusto. Inyectamos las variables de entorno
-        # directamente en el comando 'exec', así que no depende de ningún archivo.
-        run: >
-          docker compose exec -T
-          -e PYTHONUTF8="1"
-          -e APP_ENV="test"
-          -e FRONTEND_URL="http://localhost:3000"
-          -e BACKEND_URL="http://test"
-          -e REDIS_URL="redis://redis:6379"
-          -e DB_SQL_URI="sqlite+aiosqlite:///:memory:"
-          -e DB_NOSQL_URI="mongodb://localhost:27017/testdb"
-          -e SECRET_KEY="test"
-          -e ALGORITHM="HS256"
-          -e ACCESS_TOKEN_EXPIRE_MINUTES="30"
-          -e MERCADOPAGO_TOKEN="test"
-          -e CLOUDINARY_CLOUD_NAME="test"
-          -e CLOUDINARY_API_KEY="test"
-          -e CLOUDINARY_API_SECRET="test"
-          -e EMAIL_SENDER="test@example.com"
-          -e EMAIL_APP_PASSWORD="test"
-          -e SITE_NAME="test"
-          -e GROQ_API_KEY="test"
-          -e GROQ_MODEL_NAME="test"
-          -e SENTRY_DSN=""
-          backend
-          python -m pytest
+        # Este comando ahora es más simple, porque el contenedor ya tiene
+        # las variables de entorno cargadas desde el paso anterior.
+        run: docker compose exec -T backend python -m pytest
