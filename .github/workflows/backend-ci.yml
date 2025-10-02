@@ -1,3 +1,5 @@
+# En .github/workflows/backend-ci.yml (REEMPLAZAR TODO OTRA VEZ)
+
 name: Backend CI - Docker Compose Tests
 
 on:
@@ -10,22 +12,46 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Preparar archivo .env para tests
-        run: cp server/.env.example server/.env
-
       - name: Levantar servicios con Docker Compose
-        # Levanta el backend y redis en segundo plano (-d) y reconstruye las imágenes (--build).
+        # Solo levantamos los servicios, sin preocuparnos por el .env
         run: docker compose up --build -d backend redis
-      
+
       - name: Esperar a que los servicios estén listos
         run: sleep 15
 
-      - name: Instalar dependencias de desarrollo en el contenedor
-        run: docker compose exec -T backend pip install -r requirements-dev.txt
-
       - name: Correr Tests dentro del contenedor del Backend
-        run: docker compose exec -T backend python -m pytest
+        # ¡VOLVEMOS A INYECTAR LAS VARIABLES ACÁ!
+        # Es la forma más segura y explícita.
+        run: >
+          docker compose exec -T
+          -e PYTHONUTF8="1"
+          -e APP_ENV="test"
+          -e FRONTEND_URL="http://localhost:3000"
+          -e BACKEND_URL="http://test"
+          -e REDIS_URL="redis://redis:6379"
+          -e DB_SQL_URI="sqlite+aiosqlite:///:memory:"
+          -e DB_NOSQL_URI="mongodb://localhost:27017/testdb"
+          -e SECRET_KEY="clave-secreta-para-tests"
+          -e ALGORITHM="HS256"
+          -e ACCESS_TOKEN_EXPIRE_MINUTES="30"
+          -e MERCADOPAGO_TOKEN="token-de-prueba"
+          -e CLOUDINARY_CLOUD_NAME="test"
+          -e CLOUDINARY_API_KEY="test"
+          -e CLOUDINARY_API_SECRET="test"
+          -e EMAIL_SENDER="test@example.com"
+          -e EMAIL_APP_PASSWORD="test"
+          -e SITE_NAME="Test"
+          -e GROQ_API_KEY="gsk-test"
+          -e GROQ_MODEL_NAME="test"
+          backend
+          python -m pytest
