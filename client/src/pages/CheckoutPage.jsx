@@ -1,6 +1,8 @@
+// client/src/pages/CheckoutPage.jsx
+
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next'; // <-- 1. IMPORTAMOS
+import { useTranslation } from 'react-i18next';
 import { CartContext } from '../context/CartContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { createCheckoutPreference } from '../api/checkoutApi';
@@ -9,20 +11,11 @@ import { useAuthStore } from '../stores/useAuthStore';
 import Spinner from '../components/common/Spinner';
 
 const CheckoutPage = () => {
-    const { t } = useTranslation(); // <-- 2. INICIALIZAMOS
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        streetAddress: '',
-        comments: '',
-        city: '',
-        postalCode: '',
-        country: 'Argentina',
-        state: '',
-        prefix: '+54',
-        phone: ''
+        firstName: '', lastName: '', streetAddress: '', comments: '',
+        city: '', postalCode: '', country: 'Argentina', state: '', phone: ''
     });
-
     const [shippingMethod, setShippingMethod] = useState('express');
     const [paymentMethod, setPaymentMethod] = useState('mercadoPago');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -70,7 +63,6 @@ const CheckoutPage = () => {
             notify(t('checkout_error_fields'), 'error');
             return;
         }
-
         setIsProcessing(true);
 
         if (!cart || cart.items.length === 0) {
@@ -81,7 +73,9 @@ const CheckoutPage = () => {
 
         if (paymentMethod === 'mercadoPago') {
             try {
-                const preference = await createCheckoutPreference(cart, formData);
+                // --- ¡ACÁ ESTÁ LA MAGIA DEL FRONTEND! ---
+                // Ahora le pasamos el `shippingCost` a la función de la API
+                const preference = await createCheckoutPreference(cart, formData, shippingCost);
                 if (preference.init_point) {
                     window.location.href = preference.init_point;
                 } else {
@@ -104,9 +98,9 @@ const CheckoutPage = () => {
 
     if (cartLoading) return <div className="checkout-page-container"><Spinner message={t('checkout_loading')} /></div>;
 
+    // El resto del JSX para renderizar el formulario queda exactamente igual
     return (
         <main className="checkout-page-container">
-            {/* --- 3. ACÁ EMPIEZAN LAS TRADUCCIONES --- */}
             <h1 className="checkout-title">{t('checkout_title')}</h1>
             <div className="checkout-content">
                 <form id="checkout-form" onSubmit={handlePlaceOrder} className="checkout-form-section">
@@ -153,7 +147,6 @@ const CheckoutPage = () => {
                             <input type="text" id="phone" name="phone" value={formData.phone} onChange={handleFormChange} required />
                         </div>
                     </div>
-
                     <h2 className="section-title mt-8">{t('checkout_shipping_method')}</h2>
                     <div className="shipping-options">
                         <div className="radio-option">
@@ -161,8 +154,6 @@ const CheckoutPage = () => {
                            <p className="description">{t('checkout_shipping_express_desc')}</p>
                         </div>
                     </div>
-
-
                     <h2 className="section-title mt-8">{t('checkout_payment_method')}</h2>
                     <div className="payment-options">
                         <div className="radio-option">
@@ -170,10 +161,8 @@ const CheckoutPage = () => {
                         </div>
                     </div>
                 </form>
-
                 <aside className="order-summary-section">
                     <h2 className="section-title">{t('checkout_order_summary')}</h2>
-                    
                     <div className="order-summary-items">
                         {cart?.items.map(item => (
                             <div className="order-item" key={item.variante_id}>
@@ -186,7 +175,6 @@ const CheckoutPage = () => {
                             </div>
                         ))}
                     </div>
-
                     <div className="summary-line">
                         <span>{t('checkout_subtotal')}</span>
                         <span>{formatPrice(subtotal)} ARS</span>
@@ -199,7 +187,6 @@ const CheckoutPage = () => {
                         <span>{t('checkout_total')}</span>
                         <span>{formatPrice(total)} ARS</span>
                     </div>
-
                     <button 
                         type="submit" 
                         form="checkout-form" 

@@ -1,8 +1,10 @@
+# server/schemas/checkout_schemas.py
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from . import cart_schemas
 
-# --- NUEVO: Molde para la dirección de envío ---
+# --- Molde para la dirección de envío (sin cambios) ---
 class ShippingAddress(BaseModel):
     firstName: str
     lastName: str
@@ -14,22 +16,22 @@ class ShippingAddress(BaseModel):
     state: str
     phone: str
 
-# --- NUEVO: Molde para la petición de preferencia de pago ---
-# Ahora el frontend nos enviará el carrito Y la dirección
+# --- ¡ACÁ ESTÁ EL CAMBIO! ---
+# Le decimos que la petición ahora también incluye el costo del envío
 class PreferenceRequest(BaseModel):
     cart: cart_schemas.Cart
     shipping_address: ShippingAddress
+    shipping_cost: float  # <-- LÍNEA NUEVA
 
-# --- ACTUALIZADO: El pago por API también necesita la dirección ---
+# --- El resto queda igual ---
 class ApiPaymentRequest(BaseModel):
     token: str
     payment_method_id: str
     installments: int
     payer_email: EmailStr
     cart: cart_schemas.Cart
-    shipping_address: ShippingAddress # Campo añadido
+    shipping_address: ShippingAddress
 
-# --- SIN CAMBIOS ---
 class ApiResponse(BaseModel):
     status: str
     message: str

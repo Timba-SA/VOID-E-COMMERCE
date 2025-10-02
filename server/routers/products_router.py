@@ -9,9 +9,9 @@ from fastapi import (
     File, UploadFile, Form
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm.attributes import flag_modified # <-- ¡IMPORTAMOS AL DESPERTADOR!
+from sqlalchemy.orm.attributes import flag_modified
 
 # Módulos de tu aplicación
 from database.database import get_db
@@ -25,7 +25,6 @@ router = APIRouter(
     tags=["Products"]
 )
 
-# ... (El resto de los endpoints GET, POST, DELETE de productos y variantes quedan exactamente igual que los tenías) ...
 @router.get("/", response_model=List[product_schemas.Product], summary="Obtener una lista filtrada de productos")
 async def get_products(
     db: AsyncSession = Depends(get_db),
@@ -34,13 +33,15 @@ async def get_products(
     precio_max: Optional[float] = Query(None, ge=0),
     categoria_id: Optional[str] = Query(None, description="IDs de categoría separados por comas (ej: 1,3,5)"),
     talle: Optional[str] = Query(None, description="Talles separados por comas (ej: S,M,L)"),
-    color: Optional[str] = Query(None, description="Colores separados por comas (ej: Rojo,Azul)"),
+    color: Optional[str] = Query(None, description="Colores separados por comas (ej: Negro,Azul)"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(12, ge=1, le=100),
+    limit: int = Query(12, ge=1, le=500),
     sort_by: Optional[str] = Query(None, description="Opciones: precio_asc, precio_desc, nombre_asc, nombre_desc")
 ):
+    # La consulta base no cambia
     query = select(Producto).options(joinedload(Producto.variantes))
 
+    # Filtros sobre el producto principal (no cambian)
     if q: query = query.filter(Producto.nombre.ilike(f"%{q}%"))
     if precio_min is not None: query = query.where(Producto.precio >= precio_min)
     if precio_max is not None: query = query.where(Producto.precio <= precio_max)
@@ -52,28 +53,36 @@ async def get_products(
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato de 'categoria_id' es inválido. Deben ser números separados por comas.")
 
-    needs_variant_join = False
+    # --- ¡ACÁ ESTÁ EL ARREGLO PARA LOS FILTROS DE VARIANTES! ---
+    # Ahora cada filtro de variante se aplica de forma independiente.
+    
     if talle:
         talles = [t.strip() for t in talle.split(',')]
-        query = query.join(Producto.variantes).filter(VarianteProducto.tamanio.in_(talles))
-        needs_variant_join = True
+        # Le pedimos productos que tengan CUALQUIER variante que coincida con los talles.
+        query = query.where(Producto.variantes.any(VarianteProducto.tamanio.in_(talles)))
 
     if color:
-        colors = [c.strip() for c in color.split(',')]
-        if not needs_variant_join:
-            query = query.join(Producto.variantes)
-        query = query.filter(VarianteProducto.color.in_(colors))
+        colors = [c.strip().lower() for c in color.split(',')]
+        # Y que también tengan CUALQUIER variante que coincida con los colores.
+        query = query.where(Producto.variantes.any(func.lower(VarianteProducto.color).in_(colors)))
 
+    # El ordenamiento no cambia
     if sort_by:
         if sort_by == "precio_asc": query = query.order_by(Producto.precio.asc())
         elif sort_by == "precio_desc": query = query.order_by(Producto.precio.desc())
         elif sort_by == "nombre_asc": query = query.order_by(Producto.nombre.asc())
         elif sort_by == "nombre_desc": query = query.order_by(Producto.nombre.desc())
 
+    # La paginación y ejecución no cambian
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     products = result.scalars().unique().all()
     return products
+
+# =================================================================
+#  EL RESTO DE LAS FUNCIONES (GET POR ID, POST, PUT, DELETE)
+#  QUEDAN EXACTAMENTE IGUALES, NO LAS TOQUÉ PARA NO ROMPER NADA.
+# =================================================================
 
 @router.get("/{product_id}", response_model=product_schemas.Product, summary="Obtener un producto por su ID")
 async def get_product_by_id(
@@ -144,7 +153,6 @@ async def create_product(
     created_product = result.scalars().unique().first()
     return created_product
 
-# --- ¡ACÁ ESTÁ LA FUNCIÓN CORREGIDA! ---
 @router.put("/{product_id}", response_model=dict, summary="Actualizar un producto (Solo Admins)")
 async def update_product(
     product_id: int,
@@ -197,8 +205,6 @@ async def update_product(
 
     product_db.urls_imagenes = current_image_urls
     
-    # --- ¡LA LÍNEA MÁGICA QUE ARREGLA TODO! ---
-    # Le decimos a la base de datos que sí o sí mire los cambios en esta lista.
     flag_modified(product_db, "urls_imagenes")
     
     db.add(product_db)

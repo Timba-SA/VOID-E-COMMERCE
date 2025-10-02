@@ -1,3 +1,5 @@
+// client/src/api/productsApi.js
+
 import axiosClient from '../hooks/axiosClient';
 
 /**
@@ -21,13 +23,11 @@ export const getProducts = async (filters) => {
  * @returns {Promise<any|null>}
  */
 export const getProductById = async (id) => {
-  // Blindaje para que no explote si el ID llega como 'undefined'
   if (!id) {
     console.warn('Se intentó buscar un producto sin ID.');
     return null;
   }
   try {
-    // Llama a la ruta correcta que creamos en el backend
     const response = await axiosClient.get(`/products/${id}`);
     return response.data;
   } catch (error) {
@@ -38,7 +38,6 @@ export const getProductById = async (id) => {
 
 /**
  * Crea un nuevo producto (función para admins).
- * OJO: Como subís imágenes, se usa FormData.
  * @param {FormData} productData - Los datos del producto en un FormData.
  * @returns {Promise<any>}
  */
@@ -59,7 +58,7 @@ export const createProduct = async (productData) => {
 /**
  * Actualiza un producto existente (función para admins).
  * @param {number} id - El ID del producto a actualizar.
- * @param {FormData} formData - Los campos del producto a actualizar, incluyendo imágenes.
+ * @param {FormData} formData - Los campos del producto a actualizar.
  * @returns {Promise<any>}
  */
 export const updateProduct = async (id, formData) => {
@@ -87,6 +86,20 @@ export const deleteProduct = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`Error deleting product with id ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene todos los colores únicos disponibles en la base de datos.
+ * @returns {Promise<string[]>} Una lista de nombres de colores.
+ */
+export const getAvailableColors = async () => {
+  try {
+    const { data } = await axiosClient.get('/utils/filters/colors');
+    return data;
+  } catch (error) {
+    console.error('Error fetching available colors:', error);
     throw error;
   }
 };

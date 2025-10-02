@@ -1,17 +1,37 @@
+// client/src/components/common/FilterPanel.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { getAvailableColors } from '../../api/productsApi'; // <-- Importamos la nueva función
 
 const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
   const { t } = useTranslation();
   const [priceRange, setPriceRange] = useState([initialFilters.precio_min, initialFilters.precio_max]);
   const [selectedSizes, setSelectedSizes] = useState(initialFilters.talle || []);
   const [selectedColors, setSelectedColors] = useState(initialFilters.color || []);
-
-  const availableColors = ['Black', 'White', 'Grey', 'Brown', 'Beige', 'Blue'];
+  
+  // ¡ACÁ ESTÁ LA MAGIA! Un estado para guardar los colores que vienen de la DB
+  const [availableColors, setAvailableColors] = useState([]);
+  
   const minPrice = 0;
   const maxPrice = 200000;
+
+  // Efecto para buscar los colores cuando el panel se abre
+  useEffect(() => {
+    if (isOpen) {
+      const fetchColors = async () => {
+        try {
+          const colorsFromDB = await getAvailableColors();
+          setAvailableColors(colorsFromDB);
+        } catch (error) {
+          console.error("No se pudieron cargar los colores para el filtro.");
+        }
+      };
+      fetchColors();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     setPriceRange([initialFilters.precio_min, initialFilters.precio_max]);
@@ -109,30 +129,30 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
             ))}
           </div>
         </div>
-
+        
         <div className="filter-section active">
-          <div className="filter-section-header">
-            <span className="filter-section-title">{t('filter_price')}</span>
-          </div>
-          <div className="filter-section-body price-filter-body">
-            <div className="price-display">
-              <span className="price-value">{formatPrice(priceRange[0])}</span>
-              <span className="price-separator">-</span>
-              <span className="price-value">{formatPrice(priceRange[1])}</span>
+            <div className="filter-section-header">
+                <span className="filter-section-title">{t('filter_price')}</span>
             </div>
-            <Slider
-              range
-              min={minPrice}
-              max={maxPrice}
-              step={1000}
-              value={priceRange}
-              onChange={handlePriceChange}
-              onAfterChange={handleApplyPriceFilter}
-              trackStyle={[{ backgroundColor: 'black', height: 2 }]}
-              handleStyle={[{ backgroundColor: 'black', borderColor: 'black', height: 10, width: 10, marginTop: -4, boxShadow: 'none' }, { backgroundColor: 'black', borderColor: 'black', height: 10, width: 10, marginTop: -4, boxShadow: 'none'}]}
-              railStyle={{ backgroundColor: '#ccc', height: 2 }}
-            />
-          </div>
+            <div className="filter-section-body price-filter-body">
+                <div className="price-display">
+                <span className="price-value">{formatPrice(priceRange[0])}</span>
+                <span className="price-separator">-</span>
+                <span className="price-value">{formatPrice(priceRange[1])}</span>
+                </div>
+                <Slider
+                range
+                min={minPrice}
+                max={maxPrice}
+                step={1000}
+                value={priceRange}
+                onChange={handlePriceChange}
+                onAfterChange={handleApplyPriceFilter}
+                trackStyle={[{ backgroundColor: 'black', height: 2 }]}
+                handleStyle={[{ backgroundColor: 'black', borderColor: 'black', height: 10, width: 10, marginTop: -4, boxShadow: 'none' }, { backgroundColor: 'black', borderColor: 'black', height: 10, width: 10, marginTop: -4, boxShadow: 'none'}]}
+                railStyle={{ backgroundColor: '#ccc', height: 2 }}
+                />
+            </div>
         </div>
 
         <div className="filter-section active">
@@ -148,7 +168,7 @@ const FilterPanel = ({ isOpen, onClose, onFilterChange, initialFilters }) => {
                   value={color}
                   checked={selectedColors.includes(color)}
                   onChange={handleColorChange}
-                /> {t(`color_${color.toLowerCase()}`)}
+                /> {t(`color_${color.toLowerCase()}`, color)}
                 <span className="checkmark"></span>
               </label>
             ))}

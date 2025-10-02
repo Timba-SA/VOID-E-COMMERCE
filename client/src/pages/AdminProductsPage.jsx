@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
+// client/src/pages/AdminProductsPage.jsx
+
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getProducts, deleteProduct } from '@/api/productsApi';
+import { getCategories } from '@/api/categoriesApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
@@ -9,25 +12,58 @@ const AdminProductsPage = () => {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // El estado de error ahora es un string
   const { notify } = useContext(NotificationContext);
 
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  // --- ARREGLO: useEffect SEPARADOS para que no se pisen ---
+
+  // Efecto N°1: Traer los productos
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       setError('');
       try {
-        const data = await getProducts({ limit: 100 }); 
+        const data = await getProducts({ limit: 500 }); 
         setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(err.message || 'Could not load products.');
+        // Guardamos solo el mensaje del error, no el objeto entero
+        const errorMessage = err.response?.data?.detail || err.message || 'No se pudieron cargar los productos.';
+        setError(errorMessage);
         setProducts([]);
+        notify(errorMessage, 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, []);
+  }, [notify]);
+
+  // Efecto N°2: Traer las categorías (se ejecuta por separado)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getCategories();
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      } catch (err) {
+        console.error("Error al cargar categorías para el filtro:", err);
+        notify("No se pudieron cargar las categorías.", 'error');
+      }
+    };
+    fetchCategories();
+  }, [notify]);
+  
+  // --- FIN DEL ARREGLO ---
+
+  const filteredProducts = useMemo(() => {
+    if (!categoryFilter) {
+      return products;
+    }
+    return products.filter(p => p.categoria_id === parseInt(categoryFilter));
+  }, [products, categoryFilter]);
+
 
   const handleDelete = async (productId) => {
     if (!window.confirm(t('admin_products_delete_confirm'))) {
@@ -35,10 +71,10 @@ const AdminProductsPage = () => {
     }
     try {
       await deleteProduct(productId);
-      setProducts(products.filter(p => p.id !== productId));
-      notify('Product deleted successfully.', 'success');
+      setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
+      notify('Producto eliminado con éxito.', 'success');
     } catch (err) {
-      notify(`Error: ${err.detail || 'Could not delete product.'}` , 'error');
+      notify(`Error: ${err.detail || 'No se pudo eliminar el producto.'}` , 'error');
     }
   };
 
@@ -48,9 +84,22 @@ const AdminProductsPage = () => {
     <div>
       <div className="admin-header">
         <h1>{t('admin_products_title')}</h1>
-        <Link to="/admin/products/new" className="add-product-btn">{t('admin_products_add_button')}</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <select 
+            onChange={(e) => setCategoryFilter(e.target.value)} 
+            value={categoryFilter}
+            style={{ padding: '0.5rem', fontSize: '0.9rem' }}
+          >
+            <option value="">Todas las Categorías</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+            ))}
+          </select>
+          <Link to="/admin/products/new" className="add-product-btn">{t('admin_products_add_button')}</Link>
+        </div>
       </div>
 
+      {/* Ahora el error se muestra como un texto y no rompe la página */}
       {error && <h2 className="error-message" style={{marginBottom: '1rem', color: 'red'}}>{error}</h2>}
       
       <table className="admin-table">
@@ -64,8 +113,8 @@ const AdminProductsPage = () => {
           </tr>
         </thead>
         <tbody>
-          {products.length > 0 ? (
-            products.map(product => {
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(product => {
               const totalStockFromVariants = (product.variantes || []).reduce(
                 (sum, variant) => sum + variant.cantidad_en_stock, 0
               );
@@ -90,7 +139,10 @@ const AdminProductsPage = () => {
             })
           ) : (
             <tr>
-              <td colSpan="5" style={{ textAlign: 'center' }}>{t('admin_products_none')}</td>
+              <td colSpan="5" style={{ textAlign: 'center' }}>
+                {/* Mensaje inteligente: si hay filtro, dice una cosa, si no, otra */}
+                {categoryFilter ? 'No hay productos en esta categoría.' : t('admin_products_none')}
+              </td>
             </tr>
           )}
         </tbody>

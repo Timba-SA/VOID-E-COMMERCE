@@ -1,4 +1,4 @@
-// En client/src/pages/HomePage.jsx
+// client/src/pages/HomePage.jsx
 
 import React, { useState, useEffect } from 'react';
 import { gsap } from 'gsap';
@@ -6,7 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getProducts } from '../api/productsApi';
 import ProductCard from '../components/products/ProductCard';
 
-// La única "magia" que dejamos es esta, para que Vite encuentre las imágenes
 import portadaIzquierda from '/img/PortadaIzquierda.jpg';
 import portadaDerecha from '/img/PortadaDerecha.jpg';
 
@@ -16,7 +15,9 @@ const HomePage = () => {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    const fetchAndAnimate = async () => {
+    // SACAMOS LA ANIMACIÓN GSAP DE LAS IMÁGENES DE ACÁ PARA QUE NO JODA
+    
+    const fetchAndAnimateProducts = async () => {
       try {
         const fetchedProducts = await getProducts({ limit: 6 });
         setProducts(fetchedProducts);
@@ -25,7 +26,7 @@ const HomePage = () => {
       }
     };
 
-    fetchAndAnimate();
+    fetchAndAnimateProducts();
 
     gsap.to(".new-arrivals", {
       opacity: 1,
@@ -58,10 +59,20 @@ const HomePage = () => {
     <main className="home-page">
       <section className="hero-section">
         <div className="hero-image-left">
-          <img src={portadaIzquierda} alt="Modelo con prenda vanguardista" />
+          {/* USAMOS LA NUEVA CLASE DE CSS */}
+          <img
+            src={portadaIzquierda}
+            alt="Modelo con prenda vanguardista"
+            className="hero-image-entry" 
+          />
         </div>
         <div className="hero-image-right">
-          <img src={portadaDerecha} alt="Modelo con traje sastre oscuro" />
+          {/* Y ACÁ TAMBIÉN */}
+          <img
+            src={portadaDerecha}
+            alt="Modelo con traje sastre oscuro"
+            className="hero-image-entry"
+          />
         </div>
       </section>
 
@@ -73,9 +84,9 @@ const HomePage = () => {
 
         <div className="product-grid product-grid-home">
           {products.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
+            <ProductCard
+              key={product.id}
+              product={product}
               displayMode="imageOnly"
             />
           ))}
