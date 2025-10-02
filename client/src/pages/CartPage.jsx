@@ -1,11 +1,13 @@
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // <-- 1. IMPORTAMOS LA MAGIA
 import { CartContext } from '../context/CartContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import Spinner from '../components/common/Spinner';
 
 const CartPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation(); // <-- 2. INICIALIZAMOS EL TRADUCTOR
     const { cart, loading, removeItemFromCart } = useContext(CartContext);
     const { isAuthenticated } = useAuthStore();
 
@@ -33,11 +35,12 @@ const CartPage = () => {
 
     return (
         <main className="cart-page-container">
-            <h1 className="cart-page-title">SHOPPING BAG</h1>
+            {/* --- 3. ACÁ EMPIEZAN LOS CAMBIOS --- */}
+            <h1 className="cart-page-title">{t('cart_title')}</h1>
             
             <div className="cart-content">
                 <div className="cart-header">
-                    <span>ITEM</span>
+                    <span>{t('cart_item')}</span>
                     <button onClick={() => navigate('/')} className="cart-close-btn">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1 1L17 17M17 1L1 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -47,7 +50,7 @@ const CartPage = () => {
 
                 {(!cart?.items || cart.items.length === 0) ? (
                     <div className="cart-empty-message">
-                        <p>Tu carrito está vacío.</p>
+                        <p>{t('cart_empty')}</p>
                     </div>
                 ) : (
                     <>
@@ -60,7 +63,7 @@ const CartPage = () => {
                                     <div className="item-details">
                                         <h3>VOID</h3>
                                         <p>{item.name}</p>
-                                        <p>SIZE: {item.size}</p>
+                                        <p>{t('cart_size', { size: item.size })}</p>
                                     </div>
                                     <div className="item-actions">
                                         <span className="item-price">{formatPrice(item.price * item.quantity)} ARS</span>
@@ -68,7 +71,7 @@ const CartPage = () => {
                                             onClick={() => removeItemFromCart(item.variante_id)} 
                                             className="item-remove-btn"
                                         >
-                                            REMOVE
+                                            {t('cart_remove')}
                                         </button>
                                     </div>
                                 </div>
@@ -77,19 +80,19 @@ const CartPage = () => {
 
                         <div className="cart-summary-section">
                             <div className="summary-line">
-                                <span>SUBTOTAL</span>
+                                <span>{t('cart_subtotal')}</span>
                                 <span>{formatPrice(subtotal)} ARS</span>
                             </div>
                             <div className="summary-line">
-                                <span>SHIPPING ESTIMATE</span>
-                                <span className="summary-info">CALCULATED AT CHECKOUT</span>
+                                <span>{t('cart_shipping_estimate')}</span>
+                                <span className="summary-info">{t('cart_calculated_at_checkout')}</span>
                             </div>
                             <div className="summary-line total">
-                                <span>ORDER TOTAL</span>
+                                <span>{t('cart_order_total')}</span>
                                 <span>{formatPrice(orderTotal)} ARS</span>
                             </div>
                             <div className="checkout-button-container">
-                                <button onClick={handleCheckout} className="checkout-button">CHECKOUT</button>
+                                <button onClick={handleCheckout} className="checkout-button">{t('cart_checkout_button')}</button>
                             </div>
                         </div>
                     </>

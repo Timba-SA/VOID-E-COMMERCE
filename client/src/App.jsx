@@ -58,7 +58,6 @@ const AppContent = () => {
     checkAuth();
   }, [checkAuth]);
 
-  // --- ¡ACÁ ESTÁ LA SOLUCIÓN A PRUEBA DE F5! ---
   useEffect(() => {
     if (isAdminRoute) {
       setLogoPosition(null);
@@ -68,14 +67,12 @@ const AppContent = () => {
     const updatePosition = () => {
       if (logoRef.current) {
         const rect = logoRef.current.getBoundingClientRect();
-        // Solo guardamos la posición si el logo es visible
         if (rect.width > 0 && rect.height > 0) {
           setLogoPosition(rect);
         }
       }
     };
 
-    // Usamos un timeout para darle tiempo al navegador de renderizar todo después de un F5
     const timer = setTimeout(updatePosition, 100);
 
     window.addEventListener('resize', updatePosition);
@@ -86,14 +83,18 @@ const AppContent = () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
     };
-  }, [isAdminRoute, location.pathname]); // Lo ejecutamos cada vez que cambia la ruta
+  }, [isAdminRoute, location.pathname]);
 
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const handleSetAddedItem = (item) => setAddedItem(item);
   const handleOpenSearch = () => setIsSearchOpen(true);
   const handleCloseSearch = () => setIsSearchOpen(false);
-  const handleOpenCartNotification = () => setIsCartNotificationOpen(true);
+
+  const handleOpenCartNotification = () => {
+    console.log('ORDEN RECIBIDA: ¡Abrir modal fachero!'); // <-- El espía
+    setIsCartNotificationOpen(true);
+  };
   const handleCloseCartNotification = () => setIsCartNotificationOpen(false);
 
   useEffect(() => {

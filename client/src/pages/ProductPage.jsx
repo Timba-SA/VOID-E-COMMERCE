@@ -1,3 +1,4 @@
+// En FRONTEND/src/pages/ProductPage.jsx
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -138,6 +139,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         
         addItemToCart(itemToAdd);
         onSetAddedItem(itemToAdd);
+        console.log('DANDO LA ORDEN: ¡Mostrate, modal!'); // <-- El espía
         onOpenCartModal();
     };
 

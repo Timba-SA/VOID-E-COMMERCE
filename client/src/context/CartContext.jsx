@@ -1,7 +1,8 @@
+// En FRONTEND/src/context/CartContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useAuthStore } from '../stores/useAuthStore'; // 1. Usar el store de Zustand
+import { useAuthStore } from '../stores/useAuthStore';
 import { NotificationContext } from './NotificationContext';
-import { fetchCartAPI, addItemToCartAPI, removeItemFromCartAPI, getGuestSessionAPI } from '../api/cartApi'; // 2. Importar las nuevas funciones de API
+import { fetchCartAPI, addItemToCartAPI, removeItemFromCartAPI, getGuestSessionAPI } from '../api/cartApi';
 
 export const CartContext = createContext();
 
@@ -9,14 +10,12 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // 3. Obtener el estado de autenticación del store
   const { isAuthenticated } = useAuthStore(); 
   const { notify } = useContext(NotificationContext);
 
   const fetchCart = async () => {
     setLoading(true);
     try {
-      // La lógica de headers ahora está encapsulada en cartApi.js
       const cartData = await fetchCartAPI();
       setCart(cartData);
     } catch (error) {
@@ -27,9 +26,7 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // 4. El efecto ahora depende del estado de autenticación del store
   useEffect(() => {
-    // Asegurarse de que el ID de invitado exista al cargar
     const ensureGuestId = async () => {
       const token = localStorage.getItem('authToken');
       let guestId = localStorage.getItem('guestSessionId');
@@ -52,7 +49,7 @@ export const CartProvider = ({ children }) => {
     try {
       const updatedCart = await addItemToCartAPI(item);
       setCart(updatedCart);
-      notify('Producto añadido al carrito', 'success');
+      // notify('Producto añadido al carrito', 'success'); // <-- ¡ACÁ ESTÁ CALLADITO LA BOCA!
     } catch (error) {
       console.error("Error al agregar item:", error);
       notify(error.message || "No se pudo agregar el producto.", 'error');
@@ -73,7 +70,7 @@ export const CartProvider = ({ children }) => {
   const value = {
     cart,
     loading,
-    fetchCart, // Exponer fetchCart para poder refrescar el carrito manualmente si es necesario
+    fetchCart,
     itemCount: cart?.items?.reduce((total, item) => total + item.quantity, 0) || 0,
     addItemToCart,
     removeItemFromCart,
