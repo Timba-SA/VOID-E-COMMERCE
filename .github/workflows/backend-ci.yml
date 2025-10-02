@@ -14,12 +14,36 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Levantar servicios con Docker Compose
-        # Ahora le decimos que el archivo de ejemplo está en la raíz.
-        run: docker compose --env-file .env.example up --build -d backend redis
+      - name: Levantar servicios en segundo plano
+        run: docker compose up --build -d
 
       - name: Esperar a que los servicios estén listos
         run: sleep 15
 
-      - name: Correr Tests dentro del contenedor del Backend
-        run: docker compose exec -T backend python -m pytest
+      - name: Correr Tests dentro del contenedor
+        # Este es el método más robusto. Inyectamos las variables de entorno
+        # directamente en el comando 'exec', así que no depende de ningún archivo.
+        run: >
+          docker compose exec -T
+          -e PYTHONUTF8="1"
+          -e APP_ENV="test"
+          -e FRONTEND_URL="http://localhost:3000"
+          -e BACKEND_URL="http://test"
+          -e REDIS_URL="redis://redis:6379"
+          -e DB_SQL_URI="sqlite+aiosqlite:///:memory:"
+          -e DB_NOSQL_URI="mongodb://localhost:27017/testdb"
+          -e SECRET_KEY="test"
+          -e ALGORITHM="HS256"
+          -e ACCESS_TOKEN_EXPIRE_MINUTES="30"
+          -e MERCADOPAGO_TOKEN="test"
+          -e CLOUDINARY_CLOUD_NAME="test"
+          -e CLOUDINARY_API_KEY="test"
+          -e CLOUDINARY_API_SECRET="test"
+          -e EMAIL_SENDER="test@example.com"
+          -e EMAIL_APP_PASSWORD="test"
+          -e SITE_NAME="test"
+          -e GROQ_API_KEY="test"
+          -e GROQ_MODEL_NAME="test"
+          -e SENTRY_DSN=""
+          backend
+          python -m pytest
