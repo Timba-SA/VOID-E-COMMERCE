@@ -1,4 +1,4 @@
-name: Backend CI - Docker Compose Tests
+name: Backend CI - Python Tests
 
 on:
   push:
@@ -10,22 +10,46 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./server
+
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Levantar servicios con Docker Compose
-        # ==========================================================
-        # ¡EL ÚNICO CAMBIO NECESARIO ESTÁ ACÁ!
-        # Le pasamos el archivo de entorno AL COMANDO 'up'.
-        # Esto asegura que el contenedor 'backend' arranque con la nafta puesta.
-        # ==========================================================
-        run: docker compose --env-file .env.example up --build -d
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Esperar a que los servicios estén listos
-        run: sleep 15
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
 
-      - name: Correr Tests dentro del contenedor
-        # Este comando ahora es más simple, porque el contenedor ya tiene
-        # las variables de entorno cargadas desde el paso anterior.
-        run: docker compose exec -T backend python -m pytest
+      - name: Correr Tests con Pytest
+        env:
+          PYTHONUTF8: "1"
+          APP_ENV: "test"
+          # Ponemos todos los placeholders necesarios para que la app inicie
+          # aunque algunos tests no se usen.
+          FRONTEND_URL: "http://localhost:3000"
+          BACKEND_URL: "http://test"
+          REDIS_URL: "redis://dummy-redis:6379"
+          DB_SQL_URI: "sqlite+aiosqlite:///:memory:"
+          DB_NOSQL_URI: "mongodb://localhost:27017/testdb"
+          SECRET_KEY: "test"
+          ALGORITHM: "HS256"
+          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+          MERCADOPAGO_TOKEN: "test"
+          CLOUDINARY_CLOUD_NAME: "test"
+          CLOUDINARY_API_KEY: "test"
+          CLOUDINARY_API_SECRET: "test"
+          EMAIL_SENDER: "test@example.com"
+          EMAIL_APP_PASSWORD: "test"
+          SITE_NAME: "test"
+          GROQ_API_KEY: "test"
+          GROQ_MODEL_NAME: "test"
+          SENTRY_DSN: ""
+        run: python -m pytest
