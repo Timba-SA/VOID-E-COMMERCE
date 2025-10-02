@@ -6,6 +6,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getProducts } from '../api/productsApi';
 import ProductCard from '../components/products/ProductCard';
 
+// La única "magia" que dejamos es esta, para que Vite encuentre las imágenes
+import portadaIzquierda from '/img/PortadaIzquierda.jpg';
+import portadaDerecha from '/img/PortadaDerecha.jpg';
+
 gsap.registerPlugin(ScrollTrigger);
 
 const HomePage = () => {
@@ -33,7 +37,7 @@ const HomePage = () => {
 
   useEffect(() => {
     if (products.length > 0) {
-      gsap.fromTo(".product-card-home", // Apuntamos a la nueva clase
+      gsap.fromTo(".product-card-home",
         { opacity: 0, y: 50 },
         {
           opacity: 1,
@@ -54,10 +58,10 @@ const HomePage = () => {
     <main className="home-page">
       <section className="hero-section">
         <div className="hero-image-left">
-          <img src="/img/PortadaIzquierda.jpg" alt="Modelo con prenda vanguardista" />
+          <img src={portadaIzquierda} alt="Modelo con prenda vanguardista" />
         </div>
         <div className="hero-image-right">
-          <img src="/img/PortadaDerecha.jpg" alt="Modelo con traje sastre oscuro" />
+          <img src={portadaDerecha} alt="Modelo con traje sastre oscuro" />
         </div>
       </section>
 
@@ -67,13 +71,12 @@ const HomePage = () => {
             <div className="title-the-new-line"></div>
         </div>
 
-        {/* --- ¡ACÁ ESTÁ EL CAMBIO IMPORTANTE! --- */}
         <div className="product-grid product-grid-home">
           {products.map(product => (
             <ProductCard 
               key={product.id} 
               product={product} 
-              displayMode="imageOnly" // <-- LA ORDEN SECRETA
+              displayMode="imageOnly"
             />
           ))}
         </div>
