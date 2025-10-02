@@ -1435,3 +1435,56 @@ main {
 .action-button.secondary-button:hover {
     background-color: #f5f5f5;
 }
+/* --- Página de Producto --- */
+.product-details-container-full {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+  gap: 4rem; /* Espacio entre columnas */
+  max-width: 1400px;
+  margin: 4rem auto;
+  padding: 0 2rem;
+  align-items: flex-start; /* Clave para que el sticky funcione bien */
+}
+
+.product-images-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Espacio entre las imágenes */
+}
+
+.product-images-column img {
+  width: 100%;
+  height: auto;
+  object-fit: contain; /* Para que la imagen se vea completa */
+  background-color: #f8f8f8; /* Un fondito por si la imagen es rara */
+}
+
+.product-info-panel-full {
+  position: sticky; /* ¡LA MAGIA! */
+  top: 120px; /* Distancia desde arriba (ajustala si tu navbar es más alta/baja) */
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Ajustes para celulares --- */
+@media (max-width: 992px) {
+    .product-details-container-full {
+        grid-template-columns: 1fr; /* En pantallas chicas, una columna abajo de la otra */
+        gap: 3rem;
+    }
+    .product-info-panel-full {
+        position: static; /* Sacamos el sticky en celulares porque no tiene sentido */
+        top: auto;
+    }
+}
+/* =================================================================== */
+/* 10. NAVBAR STICKY SOLO EN LA PÁGINA DE PRODUCTO
+/* =================================================================== */
+
+/* Esto le dice al navegador: "Si adentro de la página está el layout de producto,
+   entonces hacé que la barra de navegación se quede pegada arriba" */
+body:has(.product-details-container-full) .main-header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+}

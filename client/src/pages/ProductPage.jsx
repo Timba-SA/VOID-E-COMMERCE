@@ -1,4 +1,3 @@
-// En FRONTEND/src/pages/ProductPage.jsx
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -32,9 +31,10 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
-
-    const [mainImage, setMainImage] = useState('');
-    const [allImageUrls, setAllImageUrls] = useState([]);
+    
+    // Ya no necesitamos 'mainImage' ni 'allImageUrls' como antes
+    // const [mainImage, setMainImage] = useState('');
+    // const [allImageUrls, setAllImageUrls] = useState([]);
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -46,10 +46,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     throw new Error(t('product_not_found'));
                 }
                 setProduct(data);
-
-                const imageUrls = getSafeImageUrls(data.urls_imagenes);
-                setAllImageUrls(imageUrls);
-                setMainImage(imageUrls[0]);
 
                 if (data.variantes && data.variantes.length > 0) {
                     const firstAvailableVariant = data.variantes.find(v => v.cantidad_en_stock > 0);
@@ -64,8 +60,11 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                             setSelectedSize(null);
                         }
                     } else {
-                        setSelectedColor(null);
-                        setSelectedSize(null);
+                        const firstVariantEver = data.variantes[0];
+                        if(firstVariantEver) {
+                            setSelectedColor(firstVariantEver.color);
+                            setSelectedSize(null);
+                        }
                     }
                 }
             } catch (err) {
@@ -82,28 +81,38 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
 
     const availableColors = useMemo(() => {
         if (!product?.variantes) return [];
-        const colorsWithStock = product.variantes
-            .filter(v => v.cantidad_en_stock > 0)
-            .map(v => v.color);
-        return [...new Set(colorsWithStock)];
+        const allColors = product.variantes.map(v => v.color);
+        return [...new Set(allColors)];
     }, [product]);
 
     const availableSizesForSelectedColor = useMemo(() => {
         if (!product?.variantes || !selectedColor) return [];
-        return product.variantes.filter(v => v.color === selectedColor && v.cantidad_en_stock > 0);
+        const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+        return product.variantes
+            .filter(v => v.color === selectedColor)
+            .sort((a, b) => {
+                const indexA = sizeOrder.indexOf(a.tamanio.toUpperCase());
+                const indexB = sizeOrder.indexOf(b.tamanio.toUpperCase());
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
     }, [product, selectedColor]);
 
+    const isSelectionOutOfStock = useMemo(() => {
+        if (!selectedColor) return false;
+        const hasStockForColor = product.variantes.some(v => v.color === selectedColor && v.cantidad_en_stock > 0);
+        if (!hasStockForColor) return true;
+        if (selectedSize) {
+            const variant = product.variantes.find(v => v.color === selectedColor && v.tamanio === selectedSize);
+            return !variant || variant.cantidad_en_stock <= 0;
+        }
+        return false;
+    }, [product, selectedColor, selectedSize]);
+
     const getColorTranslationKey = (dbColor) => {
-        const colorMapping = {
-            'negro': 'black',
-            'blanco': 'white',
-            'gris': 'grey',
-            'marrón': 'brown',
-            'beige': 'beige',
-            'azul': 'blue'
-        };
-        const lowerCaseColor = dbColor.toLowerCase();
-        return colorMapping[lowerCaseColor] || lowerCaseColor;
+        const colorMapping = { 'negro': 'black', 'blanco': 'white', 'gris': 'grey', 'marrón': 'brown', 'beige': 'beige', 'azul': 'blue' };
+        return colorMapping[dbColor.toLowerCase()] || dbColor.toLowerCase();
     };
 
     const handleColorSelect = (color) => {
@@ -113,33 +122,26 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     };
 
     const handleAddToCart = () => {
-        if (!selectedColor || !selectedSize) {
-            notify(t('product_select_option_notification'), "error");
-            return;
-        }
-
-        const selectedVariant = product.variantes.find(
-            v => v.tamanio === selectedSize && v.color === selectedColor
-        );
-
+        const selectedVariant = product.variantes.find(v => v.tamanio === selectedSize && v.color === selectedColor);
         if (!selectedVariant || selectedVariant.cantidad_en_stock <= 0) {
             notify(t('product_out_of_stock_notification'), "error");
             return;
         }
-
+        if (!selectedSize || !selectedColor) {
+            notify(t('product_select_option_notification'), "error");
+            return;
+        }
         const itemToAdd = {
             variante_id: selectedVariant.id,
             quantity: 1,
             price: product.precio,
             name: product.nombre,
-            image_url: allImageUrls[0] || null,
+            image_url: product.urls_imagenes[0] || null,
             size: selectedVariant.tamanio,
             color: selectedVariant.color,
         };
-        
         addItemToCart(itemToAdd);
         onSetAddedItem(itemToAdd);
-        console.log('DANDO LA ORDEN: ¡Mostrate, modal!'); // <-- El espía
         onOpenCartModal();
     };
 
@@ -147,72 +149,39 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     if (error) return <div className="error-container" style={{ textAlign: 'center', padding: '5rem' }}><h1>{t('product_error')}: {error}</h1></div>;
     if (!product) return <div style={{ textAlign: 'center', padding: '5rem' }}><h1>{t('product_not_found')}</h1></div>;
     
-    const isOutOfStock = availableColors.length === 0;
-    
     const formatPrice = (price) => {
-        if (typeof price !== 'number') {
-            return '$--';
-        }
-        return new Intl.NumberFormat('es-AR', {
-          style: 'currency',
-          currency: 'ARS',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(price);
+        if (typeof price !== 'number') return '$--';
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
     };
+
+    const imageUrls = getSafeImageUrls(product.urls_imagenes);
 
     return (
         <main>
             <div className="product-details-container-full">
-                <div className="product-images-column" style={{ flexBasis: '45%', flexShrink: 0 }}>
-                  <div style={{ maxWidth: '450px', margin: '0 auto' }}>
-                    <div className="main-image-container" style={{ marginBottom: '1rem' }}>
-                      <img src={transformCloudinaryUrl(mainImage, 600)} alt={product.nombre} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
-                    </div>
-                    {allImageUrls.length > 1 && (
-                        <div className="thumbnail-container" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                          {allImageUrls.map((url, index) => (
-                            <div
-                              key={index}
-                              className="thumbnail-item"
-                              onClick={() => setMainImage(url)}
-                              style={{
-                                cursor: 'pointer',
-                                border: mainImage === url ? '2px solid #000' : '2px solid transparent',
-                                padding: '2px'
-                              }}
-                            >
-                              <img
-                                src={transformCloudinaryUrl(url, 100)}
-                                alt={`Thumbnail ${index + 1}`}
-                                style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                    )}
-                  </div>
+                {/* --- ACÁ ESTÁ EL CAMBIO PRINCIPAL: Se muestran todas las imágenes en una columna --- */}
+                <div className="product-images-column">
+                  {imageUrls.map((url, index) => (
+                    <img 
+                      key={index} 
+                      src={transformCloudinaryUrl(url, 900)} // Pedimos una imagen más grande
+                      alt={`${product.nombre} - vista ${index + 1}`} 
+                    />
+                  ))}
                 </div>
                 
-                <div className="product-info-panel-full" style={{ flexBasis: '55%', paddingLeft: '3rem' }}>
+                <div className="product-info-panel-full">
                     <h1 className="product-name">{product.nombre}</h1>
                     <p className="product-price">{formatPrice(product.precio)}</p>
                     
                     <div className="product-selector">
                         <p className="selector-label">{t('product_color_label')} <span>{selectedColor ? t(`color_${getColorTranslationKey(selectedColor)}`, selectedColor) : 'N/A'}</span></p>
                         <div className="selector-buttons">
-                            {availableColors.map(color => {
-                                const translationKey = getColorTranslationKey(color);
-                                return (
-                                    <button
-                                        key={color}
-                                        className={`size-button ${selectedColor === color ? 'active' : ''}`}
-                                        onClick={() => handleColorSelect(color)}
-                                    >
-                                        {t(`color_${translationKey}`, color)}
-                                    </button>
-                                );
-                            })}
+                            {availableColors.map(color => (
+                                <button key={color} className={`size-button ${selectedColor === color ? 'active' : ''}`} onClick={() => handleColorSelect(color)}>
+                                    {t(`color_${getColorTranslationKey(color)}`, color)}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -220,12 +189,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         <p className="selector-label">{t('product_size_label')} <span>{selectedSize || 'N/A'}</span></p>
                         <div className="selector-buttons">
                             {availableSizesForSelectedColor.map(variant => (
-                                <button
-                                    key={variant.id}
-                                    className={`size-button ${selectedSize === variant.tamanio ? 'active' : ''}`}
-                                    onClick={() => setSelectedSize(variant.tamanio)}
-                                    disabled={variant.cantidad_en_stock <= 0}
-                                >
+                                <button key={variant.id} className={`size-button ${selectedSize === variant.tamanio ? 'active' : ''}`} onClick={() => setSelectedSize(variant.tamanio)} disabled={variant.cantidad_en_stock <= 0}>
                                     {variant.tamanio}
                                 </button>
                             ))}
@@ -236,8 +200,8 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         <p>{product.descripcion || t('product_no_description')}</p>
                     </div>
                     
-                    <button onClick={handleAddToCart} disabled={isOutOfStock || !selectedSize} className="add-to-cart-button">
-                        {isOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}
+                    <button onClick={handleAddToCart} disabled={isSelectionOutOfStock || !selectedSize} className="add-to-cart-button">
+                        {isSelectionOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}
                     </button>
                 </div>
             </div>

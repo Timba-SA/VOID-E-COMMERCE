@@ -215,5 +215,6 @@
   "modal_calculated_at_checkout": "CALCULADO EN CHECKOUT",
   "modal_order_total": "TOTAL DEL PEDIDO",
   "modal_view_bag_button": "VER BOLSA",
-  "modal_continue_shopping_button": "SEGUIR COMPRANDO"
+  "modal_continue_shopping_button": "SEGUIR COMPRANDO",
+  "admin_dashboard_loading": "Cargando dashboard..."
 }

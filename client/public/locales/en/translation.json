@@ -215,5 +215,6 @@
   "modal_calculated_at_checkout": "CALCULATED AT CHECKOUT",
   "modal_order_total": "ORDER TOTAL",
   "modal_view_bag_button": "VIEW BAG",
-  "modal_continue_shopping_button": "CONTINUE SHOPPING"
+  "modal_continue_shopping_button": "CONTINUE SHOPPING",
+  "admin_dashboard_loading": "Loading dashboard..."
 }
