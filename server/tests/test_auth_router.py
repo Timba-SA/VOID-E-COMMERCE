@@ -1,5 +1,6 @@
 # En tests/test_auth_router.py
 import pytest
+import os
 from httpx import AsyncClient
 from fastapi import status
 
@@ -47,7 +48,7 @@ async def test_register_existing_user(client: AsyncClient, test_user: dict):
     # El router devuelve 400 si el email existe
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-@pytest.mark.skip(reason="Este test requiere un servicio de Redis activo que no está en el CI")
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Este test requiere un servicio de Redis que no corre en el CI")
 @pytest.mark.asyncio
 async def test_login_for_access_token(client: AsyncClient, test_user: dict):
     """Prueba el login exitoso y la obtención de un token."""
@@ -59,7 +60,7 @@ async def test_login_for_access_token(client: AsyncClient, test_user: dict):
     assert "access_token" in data
     assert data["token_type"] == "bearer"
 
-@pytest.mark.skip(reason="Este test requiere un servicio de Redis activo que no está en el CI")
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Este test requiere un servicio de Redis que no corre en el CI")
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient, test_user: dict):
     """Prueba el login con contraseña incorrecta."""

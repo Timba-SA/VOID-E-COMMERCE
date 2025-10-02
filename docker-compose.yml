@@ -7,8 +7,10 @@ services:
       - "8000:8000"
     volumes:
       - ./server:/app
-    # LA LÍNEA 'env_file' NO EXISTE MÁS. CHAU PROBLEMA.
-    # El 'command' lo maneja el Dockerfile por defecto.
+    # Le decimos de dónde sacar la configuración
+    env_file:
+      - ./.env
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       - redis
 
@@ -30,3 +32,16 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+
+  worker:
+    build:
+      context: ./server
+    container_name: void_worker_dev
+    # ¡LÍNEA CLAVE QUE FALTABA! El worker también necesita la configuración.
+    env_file:
+      - ./.env
+    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO"]
+    volumes:
+      - ./server:/app
+    depends_on:
+      - redis
