@@ -1,4 +1,7 @@
+# --- docker-compose.yml ---
+
 services:
+  # 1. El Backend (tu API con FastAPI/Uvicorn)
   backend:
     build:
       context: ./server
@@ -7,13 +10,14 @@ services:
       - "8000:8000"
     volumes:
       - ./server:/app
-    # Le decimos de dónde sacar la configuración
     env_file:
       - ./.env
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       - redis
+    restart: unless-stopped
 
+  # 2. El Frontend (tu app con React/Vue/etc.)
   frontend:
     build:
       context: ./client
@@ -25,19 +29,22 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
 
+  # 3. Redis (la base de datos en memoria para Celery y caché)
   redis:
     image: "redis:7-alpine"
     container_name: void_redis_dev
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    restart: unless-stopped
 
+  # 4. Celery Worker (el obrero que hace las tareas pesadas)
   worker:
     build:
-      context: ./server
+      context: ./server # Usa la misma imagen que el backend
     container_name: void_worker_dev
-    # ¡LÍNEA CLAVE QUE FALTABA! El worker también necesita la configuración.
     env_file:
       - ./.env
     command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO"]
@@ -45,3 +52,18 @@ services:
       - ./server:/app
     depends_on:
       - redis
+    restart: unless-stopped
+
+  # 5. Celery Beat (el capataz que agenda las tareas periódicas como la del email)
+  celery_beat:
+    build:
+      context: ./server # Usa la misma imagen que el backend y el worker
+    container_name: void_celery_beat_dev
+    env_file:
+      - ./.env
+    command: ["celery", "-A", "celery_worker.celery_app", "beat", "--loglevel=INFO"]
+    volumes:
+      - ./server:/app
+    depends_on:
+      - redis
+    restart: unless-stopped

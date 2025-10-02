@@ -1,139 +1,195 @@
 import asyncio
-import imaplib
 import email
 import logging
 import os
 import sys
+from email.header import decode_header
 from email.utils import parseaddr
-from functools import partial
+from dataclasses import dataclass
+
 from dotenv import load_dotenv
+import aioimaplib
 
 # --- Agrego ruta raíz del proyecto para importar módulos ---
+# Esta parte la dejamos como la tenías, asumiendo que es necesaria para tu estructura.
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from services import ia_services, email_service
 from database.database import AsyncSessionLocal
+from database.models import ConversacionIA # Import acá arriba, como debe ser.
 
-# --- Configuración y logging ---
-load_dotenv()
-logging.basicConfig(level=logging.INFO)
+# --- Configuración centralizada y mejorada ---
+# Usamos una clase para tener todo más ordenado. ¡Más prolijo!
+@dataclass
+class Settings:
+    load_dotenv()
+    IMAP_SERVER: str = os.getenv("IMAP_SERVER", "imap.gmail.com")
+    EMAIL_ACCOUNT: str = os.getenv("EMAIL_SENDER")
+    EMAIL_PASSWORD: str = os.getenv("EMAIL_APP_PASSWORD")
+    POLL_INTERVAL: int = int(os.getenv("EMAIL_POLL_INTERVAL", 120)) # Intervalo configurable
+
+# --- Logging ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-IMAP_SERVER = "imap.gmail.com"
-EMAIL_ACCOUNT = os.getenv("EMAIL_SENDER")
-EMAIL_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
+def decode_subject(header):
+    """Decodifica el asunto del email para manejar caracteres especiales."""
+    if header is None:
+        return ""
+    decoded_parts = decode_header(header)
+    subject = ""
+    for part, charset in decoded_parts:
+        if isinstance(part, bytes):
+            subject += part.decode(charset or 'utf-8', 'ignore')
+        else:
+            subject += part
+    return subject
 
-# --- Verificación de configuración ---
-if not all([EMAIL_ACCOUNT, EMAIL_PASSWORD]):
-    logger.critical("¡ERROR FATAL! Las variables de entorno EMAIL_SENDER o EMAIL_APP_PASSWORD no están configuradas. El worker de emails no puede iniciar.")
-    # Si no hay configuración, no tiene sentido continuar.
-    # Usamos sys.exit() para detener la ejecución del script.
-    sys.exit(1)
-
-def get_email_body(msg):
-    """Extrae cuerpo texto plano del email."""
+def get_email_body(msg: email.message.Message) -> str:
+    """Extrae el cuerpo de texto plano del email de forma más robusta."""
     if msg.is_multipart():
         for part in msg.walk():
-            if part.get_content_type() == "text/plain":
-                return part.get_payload(decode=True).decode('utf-8', 'ignore')
-    return msg.get_payload(decode=True).decode('utf-8', 'ignore')
-
-async def run_sync_in_thread(func, *args):
-    """
-    Función helper para ejecutar código bloqueante en un hilo separado
-    y no congelar el programa principal.
-    """
-    loop = asyncio.get_running_loop()
-    func_to_run = partial(func, *args)
-    return await asyncio.to_thread(func_to_run)
-
-async def process_emails():
-    """Procesa emails no leídos, obtiene respuesta IA y contesta."""
-    # Doble chequeo por si acaso, aunque el script ya debería haber terminado
-    if not all([EMAIL_ACCOUNT, EMAIL_PASSWORD]):
-        logger.error("El worker de emails no puede procesar correos porque no está configurado.")
-        return
-
-    mail = None
-    try:
-        mail = imaplib.IMAP4_SSL(IMAP_SERVER)
-        logger.info(f"Conectando a IMAP server como {EMAIL_ACCOUNT}...")
-        await run_sync_in_thread(mail.login, EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        await run_sync_in_thread(mail.select, "inbox")
-        
-        _, data = await run_sync_in_thread(mail.search, None, "UNSEEN")
-        mail_ids = data[0].split()
-
-        if not mail_ids:
-            logger.info("No hay emails nuevos.")
-            return
-
-        logger.info(f"Se encontraron {len(mail_ids)} emails nuevos.")
-
-        async with AsyncSessionLocal() as db_session:
-            for mail_id in mail_ids:
+            content_type = part.get_content_type()
+            content_disposition = str(part.get("Content-Disposition"))
+            if content_type == "text/plain" and "attachment" not in content_disposition:
                 try:
-                    _, fetch_data = await run_sync_in_thread(mail.fetch, mail_id, "(RFC822)")
-                    msg = email.message_from_bytes(fetch_data[0][1])
+                    return part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', 'ignore')
+                except Exception:
+                    # Si falla, intentamos con utf-8 a la fuerza
+                    return part.get_payload(decode=True).decode('utf-8', 'ignore')
+    else:
+        try:
+            return msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', 'ignore')
+        except Exception:
+            return msg.get_payload(decode=True).decode('utf-8', 'ignore')
+    return "" # Si no encontramos nada, devolvemos string vacío
 
-                    body = get_email_body(msg)
-                    sender_email = parseaddr(msg["from"])[1]
-                    subject = msg["subject"]
 
-                    logger.info(f"Procesando email de: {sender_email} (Asunto: {subject})")
+class EmailWorker:
+    """
+    Una clase para encapsular toda la lógica del worker de emails.
+    Así separamos responsabilidades y el código es más limpio.
+    """
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.client: aioimaplib.IMAP4_SSL | None = None
 
-                    catalog = await ia_services.get_catalog_from_db(db_session)
-                    system_prompt = ia_services.get_chatbot_system_prompt()
-                    full_system_prompt = f"{system_prompt}\n\n{catalog}"
+    async def connect(self):
+        """Conecta y loguea al servidor IMAP."""
+        logger.info(f"Conectando a {self.settings.IMAP_SERVER}...")
+        self.client = aioimaplib.IMAP4_SSL(self.settings.IMAP_SERVER)
+        await self.client.wait_hello_from_server()
+        await self.client.login(self.settings.EMAIL_ACCOUNT, self.settings.EMAIL_PASSWORD)
+        await self.client.select("inbox")
+        logger.info("Conexión y login exitosos.")
 
-                    # Preparar historial vacío o con datos si corresponde
-                    gemini_history = []  # si tenés historial, convertilo al formato esperado
-
-                    # Llamada directa a la coroutine de IA (no usar run_sync_in_thread con coroutine)
-                    try:
-                        ai_response = await ia_services.get_gemini_response(full_system_prompt, gemini_history)
-                    except Exception as e:
-                        logger.exception("Error al obtener respuesta de IA dentro del worker")
-                        ai_response = "Lo siento, no puedo procesar la respuesta de IA en este momento."
-
-                    logger.info(f"Enviando respuesta generada por IA a {sender_email}...")
-                    await email_service.send_plain_email(
-                        sender_email,
-                        f"Re: {subject}",
-                        ai_response
-                    )
-
-                    await run_sync_in_thread(mail.store, mail_id, '+FLAGS', '\Seen')
-                    logger.info(f"Email ID {mail_id.decode('utf-8')} marcado como leído.")
-
-                except Exception as e:
-                    logger.error(f"Error al procesar email ID {mail_id.decode('utf-8')}: {e}", exc_info=True)
-
-    except imaplib.IMAP4.error as e:
-        logger.error(f"Error de IMAP (verificá tus credenciales y la configuración de IMAP): {e}", exc_info=True)
-    except Exception as e:
-        logger.error(f"Error en el ciclo principal del worker: {e}", exc_info=True)
-    finally:
-        if mail and mail.state == 'SELECTED':
-            await run_sync_in_thread(mail.close)
-        if mail:
-            await run_sync_in_thread(mail.logout)
+    async def close(self):
+        """Cierra la conexión de forma limpia."""
+        if self.client and self.client.is_selected():
+            await self.client.close()
+        if self.client:
+            await self.client.logout()
             logger.info("Desconexión de IMAP exitosa.")
 
-async def main():
-    logger.info("Iniciando worker de emails... Presiona CTRL+C para detener.")
-    while True:
+    async def fetch_unread_emails(self) -> list[str]:
+        """Busca y devuelve los IDs de los emails no leídos."""
+        _, data = await self.client.search("UNSEEN")
+        mail_ids = data[0].split()
+        if not mail_ids:
+            logger.info("No hay emails nuevos.")
+            return []
+        
+        logger.info(f"Se encontraron {len(mail_ids)} emails nuevos.")
+        return [mail_id.decode() for mail_id in mail_ids]
+
+    async def process_single_email(self, mail_id: str, db_session):
+        """Procesa un único email: lo lee, genera respuesta y contesta."""
         try:
-            await process_emails()
-            logger.info("Esperando 2 minutos para el próximo chequeo...")
-            await asyncio.sleep(120)
-        except KeyboardInterrupt:
-            logger.info("Deteniendo el worker de emails.")
-            break
+            _, fetch_data = await self.client.fetch(mail_id, "(RFC822)")
+            msg = email.message_from_bytes(fetch_data[0][1])
+
+            body = get_email_body(msg)
+            sender_email = parseaddr(msg["from"])[1]
+            subject = decode_subject(msg["subject"])
+
+            if not body:
+                logger.warning(f"Email ID {mail_id} de {sender_email} no tiene cuerpo de texto plano. Omitiendo.")
+                await self.client.store(mail_id, '+FLAGS', r'(\Seen)')
+                return
+
+            logger.info(f"Procesando email ID {mail_id} de: {sender_email} (Asunto: '{subject}')")
+
+            # --- Lógica de IA ---
+            catalog = await ia_services.get_catalog_from_db(db_session)
+            system_prompt = ia_services.get_chatbot_system_prompt()
+
+            # La llamada a la IA ya es asíncrona, la llamamos directamente.
+            ai_response = await ia_services.get_ia_response(
+                system_prompt=system_prompt,
+                catalog_context=catalog,
+                user_prompt=body # Le pasamos solo el body, más simple. La lógica de crear `ConversacionIA` debería estar dentro del servicio.
+            )
+            
+            # --- Envío de respuesta ---
+            logger.info(f"Enviando respuesta generada por IA a {sender_email}...")
+            await email_service.send_plain_email(
+                sender_email,
+                f"Re: {subject}",
+                ai_response
+            )
+
+            # --- Marcar como leído ---
+            await self.client.store(mail_id, '+FLAGS', r'(\Seen)')
+            logger.info(f"Email ID {mail_id} marcado como leído.")
+
+        except Exception as e:
+            logger.error(f"Error al procesar email ID {mail_id}: {e}", exc_info=True)
+
+
+    async def run(self):
+        """El bucle principal del worker."""
+        logger.info("Iniciando worker de emails... Presiona CTRL+C para detener.")
+        while True:
+            try:
+                await self.connect()
+                
+                unread_ids = await self.fetch_unread_emails()
+                if unread_ids:
+                    async with AsyncSessionLocal() as db_session:
+                        tasks = [self.process_single_email(mail_id, db_session) for mail_id in unread_ids]
+                        await asyncio.gather(*tasks) # Procesamos todos los mails en paralelo, ¡más rápido!
+
+                await self.close()
+
+            except aioimaplib.IMAP4.error as e:
+                logger.error(f"Error de IMAP (verificá credenciales/config): {e}", exc_info=True)
+            except Exception as e:
+                logger.error(f"Error en el ciclo principal del worker: {e}", exc_info=True)
+            
+            logger.info(f"Esperando {self.settings.POLL_INTERVAL} segundos para el próximo chequeo...")
+            await asyncio.sleep(self.settings.POLL_INTERVAL)
+
+
+async def main():
+    """Función principal para configurar y correr el worker."""
+    settings = Settings()
+    if not all([settings.EMAIL_ACCOUNT, settings.EMAIL_PASSWORD]):
+        logger.critical("¡ERROR FATAL! Las variables de entorno EMAIL_SENDER o EMAIL_APP_PASSWORD no están configuradas.")
+        sys.exit(1)
+
+    worker = EmailWorker(settings)
+    try:
+        await worker.run()
+    except asyncio.CancelledError:
+        logger.info("Tarea cancelada. Cerrando conexiones...")
+    finally:
+        await worker.close()
+
 
 if __name__ == "__main__":
-    # El chequeo de configuración al inicio del script se encarga de detenerlo
-    # si no están las variables de entorno.
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Deteniendo el worker de emails por petición del usuario (CTRL+C).")

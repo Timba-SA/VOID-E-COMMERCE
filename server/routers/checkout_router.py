@@ -8,7 +8,7 @@ from settings import settings
 from database.database import get_db
 from database.models import Orden, DetalleOrden, VarianteProducto, Producto
 from schemas import checkout_schemas
-from celery_worker import enviar_email_confirmacion_compra
+from workers.transactional_tasks import enviar_email_confirmacion_compra_task
 
 router = APIRouter(prefix="/api/checkout", tags=["Checkout"])
 logging.basicConfig(level=logging.INFO)
@@ -153,7 +153,7 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
             address_info = payer_info.get("address", {})
             shipping_address_to_save = {
                 "firstName": payer_info.get("first_name"),
-                "lastName": payer_info.get("last_name"),
+                "lastName": payer_info.get("last_.name"),
                 "streetAddress": address_info.get("street_name"),
                 "postalCode": address_info.get("zip_code"),
                 "phone": payer_info.get("phone", {}).get("number")
@@ -169,6 +169,6 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                 shipping_address=shipping_address_to_save # Pasamos la dirección para guardarla
             )
             # Enviar email de confirmación de compra de forma asíncrona
-            enviar_email_confirmacion_compra.delay(payment_info)
+            enviar_email_confirmacion_compra_task.delay(payment_info)
             
     return {"status": "ok"}
