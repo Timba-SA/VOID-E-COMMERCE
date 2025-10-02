@@ -30,7 +30,7 @@ const CatalogPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isNextPageAvailable, setIsNextPageAvailable] = useState(true);
 
-    const PAGE_LIMIT = 12;
+    const PAGE_LIMIT = 8; // <-- ¡ACÁ ESTÁ EL CAMBIO, PAPÁ!
 
     const [filters, setFilters] = useState({
         talle: [],
@@ -92,7 +92,7 @@ const CatalogPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, currentPage]);
+    }, [filters, currentPage, PAGE_LIMIT]);
 
     useEffect(() => {
         fetchProducts();
