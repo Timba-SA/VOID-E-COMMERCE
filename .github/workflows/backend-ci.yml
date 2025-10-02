@@ -15,20 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Levantar servicios con Docker Compose
-        # ==========================================================
-        # ¡AQUÍ ESTÁ EL CAMBIO DEFINITIVO!
-        # Le pasamos el archivo de entorno directamente al comando 'up'.
-        # Ya no necesitamos el paso intermedio de 'cp'.
-        # ==========================================================
-        run: >
-          docker compose
-          --env-file server/.env.example
-          up --build -d backend redis
+        # Ahora le decimos que el archivo de ejemplo está en la raíz.
+        run: docker compose --env-file .env.example up --build -d backend redis
 
       - name: Esperar a que los servicios estén listos
         run: sleep 15
 
       - name: Correr Tests dentro del contenedor del Backend
-        # Este comando no cambia. El contenedor 'backend' ya arrancó
-        # con las variables de entorno correctas del paso anterior.
         run: docker compose exec -T backend python -m pytest
