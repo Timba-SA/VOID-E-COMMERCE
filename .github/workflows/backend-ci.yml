@@ -25,7 +25,7 @@ jobs:
         run: sleep 15
 
       - name: Instalar dependencias de desarrollo en el contenedor
-        run: docker compose exec -T backend pip install -r server/requirements-dev.txt
+        run: docker compose exec -T backend pip install -r requirements-dev.txt
 
       - name: Correr Tests dentro del contenedor del Backend
         run: docker compose exec -T backend python -m pytest
