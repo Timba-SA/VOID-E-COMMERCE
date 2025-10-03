@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import sentry_sdk
-from settings import settings
+from .settings import settings
 from database.database import engine, AsyncSessionLocal
 from database.models import Base, Categoria
 from routers import (
