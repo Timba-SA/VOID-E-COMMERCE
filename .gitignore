@@ -28,3 +28,4 @@ frontend/dist/
 
 # Otros archivos
 node_modules/
+celerybeat-schedule
