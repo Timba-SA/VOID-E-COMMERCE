@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # --- Email ---
     EMAIL_SENDER: str
     EMAIL_APP_PASSWORD: str
+    IMAP_SERVER: str = "imap.gmail.com"
 
     # --- Nombre de la tienda ---
     SITE_NAME: str

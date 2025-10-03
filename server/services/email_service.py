@@ -1,5 +1,6 @@
 # En backend/services/email_service.py
 
+import ssl
 import asyncio
 import aiosmtplib
 import logging
@@ -42,6 +43,10 @@ async def send_order_confirmation_email(payment_info: dict):
     message["From"] = EMAIL_SENDER
     message["To"] = receiver_email
 
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
     text = f"¡Hola! Tu compra ha sido confirmada. El total es de ${payment_info['transaction_amount']}."
     
     html = f"""
@@ -72,6 +77,7 @@ async def send_order_confirmation_email(payment_info: dict):
             start_tls=True,
             username=EMAIL_SENDER,
             password=EMAIL_PASSWORD,
+            tls_context=context
         )
         logger.info(f"Email de confirmación enviado a {receiver_email}")
     except Exception as e:
@@ -90,6 +96,10 @@ async def send_plain_email(receiver_email: str, subject: str, body: str):
     message["From"] = EMAIL_SENDER
     message["To"] = receiver_email
 
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
     try:
         await aiosmtplib.send(
             message,
@@ -98,6 +108,7 @@ async def send_plain_email(receiver_email: str, subject: str, body: str):
             start_tls=True,
             username=EMAIL_SENDER,
             password=EMAIL_PASSWORD,
+            tls_context=context
         )
         logger.info(f"Email enviado a {receiver_email} con asunto: {subject}")
     except Exception as e:
@@ -118,6 +129,10 @@ async def send_password_reset_email(receiver_email: str, token: str):
     message["Subject"] = "Recuperación de Contraseña - VOID"
     message["From"] = EMAIL_SENDER
     message["To"] = receiver_email
+
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
 
     text = f"""
     Hola,
@@ -154,6 +169,7 @@ async def send_password_reset_email(receiver_email: str, token: str):
             start_tls=True,
             username=EMAIL_SENDER,
             password=EMAIL_PASSWORD,
+            tls_context=context
         )
         logger.info(f"Email de reseteo de contraseña enviado a {receiver_email}")
     except Exception as e:

@@ -1,7 +1,7 @@
 # En backend/services/ia_services.py
 
 import logging
-from typing import List, Dict, Any, Optional # <--- CAMBIO 1: Importamos Optional
+from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from groq import Groq, GroqError
@@ -54,15 +54,30 @@ def get_chatbot_system_prompt() -> str:
         "Si no sabes algo, dilo claramente sin inventar información, y ofrece contactar a un humano."
     )
 
-def _build_messages_for_groq(system_prompt: str, catalog_context: str, chat_history: List[ConversacionIA]) -> List[Dict[str, Any]]:
+def _build_messages_for_groq(system_prompt: str, catalog_context: str, chat_history: List[Any]) -> List[Dict[str, Any]]:
     """Construye la lista de mensajes para enviar a la API de Groq."""
     messages = [{"role": "system", "content": f"{system_prompt}\n\nContexto del Catálogo Actual:\n{catalog_context}"}]
     
     for entry in chat_history:
-        if entry.prompt:
-            messages.append({"role": "user", "content": entry.prompt.strip()})
-        if entry.respuesta and not entry.respuesta.strip().startswith("ERROR:"):
-            messages.append({"role": "assistant", "content": entry.respuesta.strip()})
+        user_prompt = None
+        assistant_response = None
+        
+        if hasattr(entry, 'prompt'):
+            # Es un objeto de la DB (como ConversacionIA)
+            user_prompt = entry.prompt
+            assistant_response = entry.respuesta
+        elif isinstance(entry, dict):
+            # Es un diccionario (como el que mandamos desde la tarea de email)
+            if entry.get('role') == 'user':
+                user_prompt = entry.get('content')
+            elif entry.get('role') == 'assistant':
+                assistant_response = entry.get('content')
+
+        if user_prompt:
+            messages.append({"role": "user", "content": user_prompt.strip()})
+        
+        if assistant_response and not str(assistant_response).strip().startswith("ERROR:"):
+            messages.append({"role": "assistant", "content": assistant_response.strip()})
             
     return messages
 
