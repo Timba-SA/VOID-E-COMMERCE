@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import axiosClient from '../hooks/axiosClient';
 
 export const AuthContext = createContext();
 
@@ -11,19 +12,9 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async () => {
       if (token) {
         try {
-          const response = await fetch('http://127.0.0.1:8000/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-          } else {
-            console.error("Token inválido o expirado. Limpiando sesión.");
-            logout();
-          }
+          // Usamos axiosClient que ya tiene la URL base y el interceptor de token
+          const response = await axiosClient.get('/auth/me');
+          setUser(response.data);
         } catch (error) {
           console.error("Error al verificar el token, limpiando sesión:", error);
           logout();

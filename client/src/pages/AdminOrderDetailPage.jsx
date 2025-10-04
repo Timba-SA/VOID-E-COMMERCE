@@ -1,34 +1,28 @@
 // En FRONTEND/src/pages/AdminOrderDetailPage.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
+import axiosClient from '../hooks/axiosClient'; // Importamos axiosClient
 
 const AdminOrderDetailPage = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      if (!token) return;
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/admin/sales/${orderId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('No se pudieron cargar los detalles de la orden.');
-        const data = await response.json();
-        setOrder(data);
+        const response = await axiosClient.get(`/admin/sales/${orderId}`);
+        setOrder(response.data);
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.detail || 'No se pudieron cargar los detalles de la orden.');
       } finally {
         setLoading(false);
       }
     };
     fetchOrderDetails();
-  }, [orderId, token]);
+  }, [orderId]);
 
   if (loading) return <Spinner message="Cargando detalles de la orden..." />;
   if (error) return <h2 className="error-message">Error: {error}</h2>;

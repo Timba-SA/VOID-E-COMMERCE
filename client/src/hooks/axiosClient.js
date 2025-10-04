@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: 'https://void-e-commerce-1.onrender.com/api',
 });
 
 // Interceptor para añadir el token de autenticación
