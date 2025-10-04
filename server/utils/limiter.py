@@ -7,7 +7,7 @@ from settings import settings
 # La función 'get_remote_address' le dice al limitador que agrupe
 # las peticiones por la dirección IP del que las hace.
 # 'storage_uri' le dice que use nuestro Redis para guardar la cuenta.
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri=settings.REDIS_URL
-)
+#limiter = Limiter(
+#    key_func=get_remote_address,
+#    storage_uri=settings.REDIS_URL
+#)
