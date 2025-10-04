@@ -73,8 +73,8 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = [
-    "http://localhost",
-    "http://localhost:5173",
+    "https://void-frontend-g0hf.onrender.com", # El dominio de tu frontend en producción
+    "http://localhost:5173",                 # El dominio de tu frontend para desarrollo local
 ]
 
 app.add_middleware(
