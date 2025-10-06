@@ -726,37 +726,46 @@ main {
 /* =================================================================== */
 /* 8. MEDIA QUERIES (DISEÑO RESPONSIVO)
 /* =================================================================== */
+
 @media (max-width: 1200px) {
     .hero-image-left { margin-left: -2rem; }
     .hero-image-right { margin-right: -2rem; }
     .product-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
     .catalog-product-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
 @media (max-width: 992px) {
-    .dropdown-menu { width: 70vw; }
-    
+    .main-header { padding: 1.5rem 1rem; }
     .nav-right a:not(:last-child), .search-container { display: none; }
+    
+    /* ARREGLO PARA CELU */
+    .nav-right {
+        flex: 1; /* Le damos el mismo espacio que al de la izquierda */
+        justify-content: flex-end;
+    }
+    .logo { margin-left: 0; }
+    /* FIN ARREGLO */
+
+    .dropdown-menu { width: 70vw; }
+    .dropdown-nav-secondary { display: block; }
+
     .hero-section { flex-direction: column; height: auto; padding: 2rem 1rem; }
     .hero-image-left, .hero-image-right { width: 100%; height: auto; margin: 0; max-height: 70vh; }
     .hero-image-left { margin-bottom: 1.5rem; }
     .product-grid { grid-template-columns: repeat(2, 1fr); margin-top: 6rem; }
     .cart-content { grid-template-columns: 1fr; }
+
     .product-details-container-full {
-        flex-direction: column;
-        gap: 2rem;
+        grid-template-columns: 1fr;
+        gap: 3rem;
         margin-top: 2rem;
     }
     .product-info-panel-full {
-        padding-left: 0;
-    }
-    .dropdown-nav-secondary {
-        display: block; /* ¡Y acá los hacemos visibles de nuevo! */
-        margin-top: 2rem;
-        padding-top: 2rem;
-        margin-left: 2rem;
-        border-top: 1px solid #eee;
+        position: static; /* Sacamos el sticky en celulares */
+        top: auto;
     }
 }
+
 @media (max-width: 768px) {
     .dropdown-menu { width: 85vw; }
     .logo { font-size: 54px; }
@@ -767,7 +776,7 @@ main {
     .catalog-product-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
     .catalog-title { font-size: 1.25rem; }
     .account-content-grid { grid-template-columns: 1fr; gap: 3rem; }
-    .checkout-content { flex-direction: column; gap: 40px; }
+    .checkout-content { grid-template-columns: 1fr; gap: 40px; }
     .form-grid { grid-template-columns: 1fr; }
     .input-group.full-width { grid-column: span 1; }
     .cart-item-row {
@@ -779,21 +788,22 @@ main {
         text-align: left;
         margin-top: 1rem;
     }
-    .item-price {
-        margin-bottom: 1rem;
-    }
+    .item-price { margin-bottom: 1rem; }
 }
+
 @media (max-width: 600px) {
     .dropdown-menu { width: 100%; }
     .main-header { padding: 1rem; }
-    .logo { font-size: 48px; margin-left: 0; }
-    .nav-right { display: none; }
+    .logo { font-size: 48px; }
+    .nav-right { display: flex; } /* Mostramos el link del carrito */
+    
     .hero-section { min-height: auto; }
     .hero-image-left, .hero-image-right { max-height: 60vh; }
     .new-arrivals { padding: 1.5rem 1rem; }
     .product-grid { grid-template-columns: 1fr; gap: 2rem; margin-top: 5rem; }
     .catalog-product-grid { grid-template-columns: 1fr; gap: 2rem; }
 }
+
 @media (max-width: 480px) {
     .dropdown-nav-left { margin-left: 1.5rem; }
     .dropdown-nav-right { left: 45%; }
@@ -807,7 +817,6 @@ main {
     .phone-input-group .prefix, .phone-input-group .phone-number { flex-basis: auto; }
     .form-title { font-size: 1rem; }
 }
-
 /* --- Admin Form --- */
 .admin-form {
   max-width: 960px;
@@ -1467,17 +1476,6 @@ main {
   flex-direction: column;
 }
 
-/* --- Ajustes para celulares --- */
-@media (max-width: 992px) {
-    .product-details-container-full {
-        grid-template-columns: 1fr; /* En pantallas chicas, una columna abajo de la otra */
-        gap: 3rem;
-    }
-    .product-info-panel-full {
-        position: static; /* Sacamos el sticky en celulares porque no tiene sentido */
-        top: auto;
-    }
-}
 /* =================================================================== */
 /* 10. NAVBAR STICKY SOLO EN LA PÁGINA DE PRODUCTO
 /* =================================================================== */

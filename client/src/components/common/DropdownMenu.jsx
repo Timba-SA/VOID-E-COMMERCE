@@ -31,8 +31,6 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
         const menswear = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
         const womenswear = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
 
-        // --- ACÁ ESTÁ EL CAMBIO ---
-        // Ahora, en vez de usar el nombre directo, lo traducimos
         setCategories({
           womenswear: womenswear.map(c => ({
             name: t(`category_${c.nombre.toLowerCase()}`),
@@ -52,7 +50,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
     if (isOpen) {
         fetchAndOrganizeCategories();
     }
-  }, [isOpen, t]); // Agregamos `t` a las dependencias para que se actualice al cambiar de idioma
+  }, [isOpen, t]);
 
   const handleNavigateAndClose = (path) => {
     navigate(path);
@@ -172,8 +170,9 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
 
           <div className="dropdown-footer">
             <div className="footer-images">
-              <div className="footer-image left"><img src="/img/dropdownIzquierda.jpg" alt="Carretera" /></div>
-              <div className="footer-image right"><img src="/img/dropdownDerecha.jpg" alt="Autopista" /></div>
+              {/* ¡ACÁ ESTÁ EL ARREGLO! LE SAQUÉ EL /img/ */}
+              <div className="footer-image left"><img src="/dropdownIzquierda.jpg" alt="Carretera" /></div>
+              <div className="footer-image right"><img src="/dropdownDerecha.jpg" alt="Autopista" /></div>
             </div>
             <h3 className="footer-text">{t('menu_footer_text')}</h3>
           </div>
