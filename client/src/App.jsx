@@ -59,6 +59,18 @@ const AppContent = () => {
   }, [checkAuth]);
 
   useEffect(() => {
+    // ESTA ES LA LÍNEA MÁGICA QUE TE MANDA PARA ARRIBA
+    window.scrollTo(0, 0);
+
+    // El resto de la lógica para cerrar modales
+    setIsMenuOpen(false);
+    setIsCartNotificationOpen(false);
+    setIsSearchOpen(false);
+    document.body.classList.remove('menu-open');
+  }, [location]);
+
+
+  useEffect(() => {
     if (isAdminRoute) {
       setLogoPosition(null);
       return;
@@ -92,7 +104,6 @@ const AppContent = () => {
   const handleCloseSearch = () => setIsSearchOpen(false);
 
   const handleOpenCartNotification = () => {
-    console.log('ORDEN RECIBIDA: ¡Abrir modal fachero!'); // <-- El espía
     setIsCartNotificationOpen(true);
   };
   const handleCloseCartNotification = () => setIsCartNotificationOpen(false);
@@ -104,13 +115,6 @@ const AppContent = () => {
       localStorage.setItem('guestSessionId', guestId);
     }
   }, []);
-
-  useEffect(() => {
-    setIsMenuOpen(false);
-    setIsCartNotificationOpen(false);
-    setIsSearchOpen(false);
-    document.body.classList.remove('menu-open');
-  }, [location]);
 
   useEffect(() => {
     if (isAdminRoute) return;

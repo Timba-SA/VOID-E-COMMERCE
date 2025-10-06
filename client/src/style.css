@@ -1532,3 +1532,26 @@ body:has(.product-details-container-full) .main-header {
   /* 'forwards' le dice que se quede en el estado final (visible) y no vuelva a empezar */
   animation: fadeInOnLoad 1.8s ease-out forwards;
 }
+/* =================================================================== */
+/* 12. ESTILOS PARA EL BOTÓN "READ MORE" DE ABOUT US
+/* =================================================================== */
+
+.read-more-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 2rem;
+  font-family: var(--font-nav);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 2.5rem;
+  transition: all 0.3s ease;
+}
+
+.read-more-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: #000;
+}

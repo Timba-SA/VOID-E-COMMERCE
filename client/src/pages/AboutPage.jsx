@@ -1,21 +1,40 @@
 // En client/src/pages/AboutPage.jsx
-
 import React from 'react';
+import heroImage from '/img/PortadaDerecha.jpg'; // 1. Importamos la imagen
 
 const AboutPage = () => {
+
+  // 2. Función para hacer el scroll suave
+  const handleScrollDown = () => {
+    const section = document.getElementById('our-philosophy');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <main className="about-page">
       <section className="about-hero">
         <div className="about-hero-background">
-          <img src="/img/PortadaDerecha.jpg" alt="Concepto de VOID" />
+          {/* 3. Usamos la imagen importada y le ponemos la clase de animación */}
+          <img 
+            src={heroImage} 
+            alt="Concepto de VOID" 
+            className="hero-image-entry"
+          />
         </div>
         <div className="about-hero-title">
           <h1>THE CONCEPT BEHIND THE VOID</h1>
+          {/* 4. Agregamos el botón fachero */}
+          <button onClick={handleScrollDown} className="read-more-btn">
+            READ MORE
+          </button>
         </div>
       </section>
 
       <div className="about-content">
-        <section className="about-content-section philosophy">
+        {/* 5. Le ponemos un 'id' a la sección para que el botón sepa a dónde ir */}
+        <section id="our-philosophy" className="about-content-section philosophy">
           <div className="section-title-wrapper">
             <h2 className="section-title">OUR PHILOSOPHY</h2>
             <div className="section-line"></div>
