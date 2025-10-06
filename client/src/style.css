@@ -199,9 +199,32 @@ main {
 .dropdown-logo { font-family: var(--font-logo); font-size: 60px; color: var(--text-color); line-height: 1; }
 
 .dropdown-content { display: flex; flex-direction: column; flex-grow: 1; overflow-y: auto; }
-.menu-categories { display: flex; flex-grow: 1; gap: 4rem; position: relative; }
-.dropdown-nav-left { margin-left: 2rem; margin-top: 2rem; flex: 1; }
-.dropdown-nav-right { position: absolute; top: 2rem; left: 40%; transition: top 0.3s ease; flex: 1; }
+
+/* =================================================================== */
+/* =================== ¡ACÁ ESTÁ LA MAGIA NUEVA! ===================== */
+/* =================================================================== */
+.menu-categories {
+    display: grid;
+    grid-template-columns: 35% 1fr; /* Dividimos en 2 columnas */
+    flex-grow: 1;
+    padding: 2rem 0; /* Padding arriba y abajo */
+}
+
+.dropdown-nav-left {
+    margin: 0;
+    padding: 0 2rem; /* Le damos aire a los costados */
+}
+
+.dropdown-nav-right {
+    position: static; /* ¡Chau al position: absolute! */
+    margin: 0;
+    padding: 0 2rem; /* Aire a los costados */
+    border-left: 1px solid #eee; /* Una línea divisoria que queda canchera */
+}
+/* =================================================================== */
+/* =================== FIN DE LA MAGIA =============================== */
+/* =================================================================== */
+
 .dropdown-nav-left ul, .dropdown-nav-right ul { list-style: none; padding: 0; }
 .dropdown-nav-left li, .dropdown-nav-right li { margin-bottom: 1.2rem; }
 .category-link { font-size: 18px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.05em; display: block; color: #888; }
@@ -212,23 +235,12 @@ main {
 .submenu a { font-size: 16px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.05em; }
 
 .dropdown-nav-secondary {
-    margin-top: 2rem;
-    padding: 2rem 0;
+    padding: 2rem;
     border-top: 1px solid #eee;
-    margin-left: 2rem;
-    display: none;
+    display: none; /* Por defecto oculto en pantallas grandes */
 }
-
-.dropdown-nav-secondary ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.dropdown-nav-secondary li {
-    margin-bottom: 1.2rem;
-}
-
+.dropdown-nav-secondary ul { list-style: none; padding: 0; margin: 0; }
+.dropdown-nav-secondary li { margin-bottom: 1.2rem; }
 .dropdown-nav-secondary .category-link {
     font-size: 16px;
     color: #888;
@@ -246,9 +258,11 @@ main {
 .footer-image.left img { object-position: 70% center; } .footer-image.right img { object-position: 30% center; }
 .footer-image img { width: 100%; height: 100%; object-fit: cover; }
 .footer-text { position: absolute; top: 75%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; font-size: 55px; font-weight: 50; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.01em; text-transform: uppercase; }
-.dropdown-nav-secondary {
-    display: none;
-}
+
+
+/* --- El resto del archivo queda igual, pero te lo pego por las dudas --- */
+
+
 /* =================================================================== */
 /* 5. FOOTER
 /* =================================================================== */
@@ -431,7 +445,6 @@ main {
 }
 .catalog-product-image-container {
   background-color: transparent;
-  /* border: 1px solid #eee;  <-- COMENTADA O BORRADA */
   margin-bottom: 1rem;
   aspect-ratio: 3 / 4;
   display: flex;
@@ -726,7 +739,6 @@ main {
 /* =================================================================== */
 /* 8. MEDIA QUERIES (DISEÑO RESPONSIVO)
 /* =================================================================== */
-
 @media (max-width: 1200px) {
     .hero-image-left { margin-left: -2rem; }
     .hero-image-right { margin-right: -2rem; }
@@ -738,13 +750,11 @@ main {
     .main-header { padding: 1.5rem 1rem; }
     .nav-right a:not(:last-child), .search-container { display: none; }
     
-    /* ARREGLO PARA CELU */
     .nav-right {
-        flex: 1; /* Le damos el mismo espacio que al de la izquierda */
+        flex: 1; 
         justify-content: flex-end;
     }
     .logo { margin-left: 0; }
-    /* FIN ARREGLO */
 
     .dropdown-menu { width: 70vw; }
     .dropdown-nav-secondary { display: block; }
@@ -761,7 +771,7 @@ main {
         margin-top: 2rem;
     }
     .product-info-panel-full {
-        position: static; /* Sacamos el sticky en celulares */
+        position: static;
         top: auto;
     }
 }
@@ -789,13 +799,27 @@ main {
         margin-top: 1rem;
     }
     .item-price { margin-bottom: 1rem; }
+
+    /* ¡MÁS MAGIA PARA EL MENÚ EN CELU! */
+    .menu-categories {
+        grid-template-columns: 1fr; /* Una sola columna */
+        padding: 1rem;
+    }
+    .dropdown-nav-right {
+        padding-left: 0;
+        border-left: none; /* Sacamos la línea */
+        margin-top: 2rem;
+    }
+    .dropdown-nav-left {
+        padding-right: 0;
+    }
 }
 
 @media (max-width: 600px) {
     .dropdown-menu { width: 100%; }
     .main-header { padding: 1rem; }
     .logo { font-size: 48px; }
-    .nav-right { display: flex; } /* Mostramos el link del carrito */
+    .nav-right { display: flex; }
     
     .hero-section { min-height: auto; }
     .hero-image-left, .hero-image-right { max-height: 60vh; }
@@ -806,7 +830,8 @@ main {
 
 @media (max-width: 480px) {
     .dropdown-nav-left { margin-left: 1.5rem; }
-    .dropdown-nav-right { left: 45%; }
+    /* Ya no necesitamos esto porque usamos grid */
+    /* .dropdown-nav-right { left: 45%; } */
     .category-link { font-size: 16px; }
     .submenu a { font-size: 14px; }
     .footer-text { font-size: 18px; }
