@@ -1,3 +1,5 @@
+// En client/src/pages/ProductPage.jsx
+
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -5,6 +7,12 @@ import { CartContext } from '../context/CartContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { getProductById } from '../api/productsApi';
 import Spinner from '../components/common/Spinner';
+
+// ¡Importamos todo lo necesario para la wishlist!
+import { useAuthStore } from '../stores/useAuthStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getWishlistAPI, addToWishlistAPI, removeFromWishlistAPI } from '../api/wishListApi';
+import { Heart } from 'lucide-react';
 
 const transformCloudinaryUrl = (url, width) => {
   if (!url || !url.includes('cloudinary')) return url;
@@ -24,6 +32,8 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     const { productId } = useParams();
     const { addItemToCart } = useContext(CartContext);
     const { notify } = useContext(NotificationContext);
+    const { isAuthenticated } = useAuthStore();
+    const queryClient = useQueryClient();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,9 +42,34 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
     
-    // Ya no necesitamos 'mainImage' ni 'allImageUrls' como antes
-    // const [mainImage, setMainImage] = useState('');
-    // const [allImageUrls, setAllImageUrls] = useState([]);
+    // --- LÓGICA DE WISHLIST ---
+    const { data: wishlist } = useQuery({
+      queryKey: ['wishlist'],
+      queryFn: getWishlistAPI,
+      enabled: isAuthenticated,
+    });
+
+    const isWishlisted = useMemo(() => 
+      wishlist?.some(item => item.id === parseInt(productId)),
+      [wishlist, productId]
+    );
+
+    const addToWishlistMutation = useMutation({
+      mutationFn: addToWishlistAPI,
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wishlist'] }),
+    });
+
+    const removeFromWishlistMutation = useMutation({
+      mutationFn: removeFromWishlistAPI,
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wishlist'] }),
+    });
+
+    const handleWishlistToggle = () => {
+      if (!isAuthenticated) return;
+      const id = parseInt(productId);
+      isWishlisted ? removeFromWishlistMutation.mutate(id) : addToWishlistMutation.mutate(id);
+    };
+    // --- FIN LÓGICA DE WISHLIST ---
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -159,19 +194,26 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     return (
         <main>
             <div className="product-details-container-full">
-                {/* --- ACÁ ESTÁ EL CAMBIO PRINCIPAL: Se muestran todas las imágenes en una columna --- */}
                 <div className="product-images-column">
                   {imageUrls.map((url, index) => (
                     <img 
                       key={index} 
-                      src={transformCloudinaryUrl(url, 900)} // Pedimos una imagen más grande
+                      src={transformCloudinaryUrl(url, 900)}
                       alt={`${product.nombre} - vista ${index + 1}`} 
                     />
                   ))}
                 </div>
                 
                 <div className="product-info-panel-full">
-                    <h1 className="product-name">{product.nombre}</h1>
+                    <div className="product-header">
+                        <h1 className="product-name">{product.nombre}</h1>
+                        {isAuthenticated && (
+                          <button onClick={handleWishlistToggle} className="wishlist-button-detail">
+                            <Heart size={24} className={isWishlisted ? 'wishlisted' : ''} />
+                          </button>
+                        )}
+                    </div>
+
                     <p className="product-price">{formatPrice(product.precio)}</p>
                     
                     <div className="product-selector">

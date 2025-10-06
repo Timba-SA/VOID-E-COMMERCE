@@ -1555,3 +1555,39 @@ body:has(.product-details-container-full) .main-header {
   background: rgba(255, 255, 255, 0.9);
   color: #000;
 }
+/* =================================================================== */
+/* 13. ESTILOS PARA EL BOTÓN DE WISHLIST
+/* =================================================================== */
+
+.wishlist-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0; /* Oculto por defecto */
+  transition: opacity 0.3s ease, background-color 0.3s ease;
+  z-index: 10;
+}
+
+.catalog-product-image-container:hover .wishlist-button {
+  opacity: 1; /* Aparece cuando pasás el mouse por la imagen */
+}
+
+.wishlist-button svg {
+  transition: all 0.2s ease;
+  stroke: #333; /* Color del borde del corazón */
+  fill: none; /* Sin relleno por defecto */
+}
+
+.wishlist-button svg.wishlisted {
+  fill: #e63946; /* Se pinta de rojo cuando está en la wishlist */
+  stroke: #e63946;
+}

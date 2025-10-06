@@ -1,3 +1,4 @@
+// En client/src/components/common/Navbar.jsx
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -5,6 +6,7 @@ import { CartContext } from '../../context/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts } from '../../api/productsApi';
 import { useTranslation } from 'react-i18next';
+import { Heart } from 'lucide-react'; // Importamos el ícono
 
 const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
     const { isAuthenticated, user, isAuthLoading } = useAuthStore();
@@ -24,10 +26,7 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
     } = useQuery({
       queryKey: ['searchProducts', query],
       queryFn: () => getProducts({ q: query, limit: 5 }),
-      // ===============================================
-      // ¡ACÁ ESTÁ EL CAMBIO! De 2 lo pasé a 1
-      // ===============================================
-      enabled: query.length > 1, 
+      enabled: query.length > 1,
       staleTime: 1000 * 60 * 5,
     });
 
@@ -150,6 +149,12 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
               ) : (
                 <Link to="/login">{t('nav_login')}</Link>
               )
+            )}
+            
+            {!isAuthLoading && isAuthenticated && (
+              <Link to="/wishlist" title="Wishlist" style={{ display: 'flex', alignItems: 'center' }}>
+                <Heart size={20} />
+              </Link>
             )}
             
             <Link to="/cart">{t('nav_bag')} ({itemCount})</Link>

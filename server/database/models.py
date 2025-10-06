@@ -25,11 +25,7 @@ class Producto(Base):
     precio = Column(DECIMAL(10, 2), nullable=False)
     sku = Column(String(100), unique=True, nullable=False)
     
-    # --- ¡CAMBIO CLAVE! ---
-    # Cambiamos Text por JSON. Esto permite guardar una lista de URLs
-    # de forma nativa en la base de datos.
     urls_imagenes = Column(JSON, nullable=True)
-    # --- FIN DEL CAMBIO ---
 
     material = Column(String(100), nullable=True)
     talle = Column(String(50), nullable=True)
@@ -95,3 +91,15 @@ class ConversacionIA(Base):
     prompt = Column(Text, nullable=False)
     respuesta = Column(Text, nullable=False)
     creado_en = Column(TIMESTAMP, server_default=func.now())
+
+# ===================================================================
+# ¡ACÁ ESTÁ LO NUEVO QUE AGREGAMOS!
+# ===================================================================
+class WishlistItem(Base):
+    __tablename__ = "wishlist_items"
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(String(255), nullable=False, index=True)
+    producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
+    creado_en = Column(TIMESTAMP, server_default=func.now())
+
+    producto = relationship("Producto")

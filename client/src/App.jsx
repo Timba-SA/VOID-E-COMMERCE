@@ -3,43 +3,44 @@
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { useAuthStore } from './stores/useAuthStore';
-import Navbar from '@/components/common/Navbar.jsx';
-import Footer from '@/components/common/Footer.jsx';
-import DropdownMenu from '@/components/common/DropdownMenu.jsx';
-import ProtectedRoute from '@/components/common/ProtectedRoute.jsx';
-import CartNotificationModal from '@/components/products/CartNotificationModal.jsx';
-import SearchModal from '@/components/common/SearchModal.jsx';
-import Chatbot from '@/components/common/Chatbot.jsx';
-import Spinner from '@/components/common/Spinner.jsx';
+import { useAuthStore } from './stores/useAuthStore.js';
+import Navbar from './components/common/Navbar.jsx';
+import Footer from './components/common/Footer.jsx';
+import DropdownMenu from './components/common/DropdownMenu.jsx';
+import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+import CartNotificationModal from './components/products/CartNotificationModal.jsx';
+import SearchModal from './components/common/SearchModal.jsx';
+import Chatbot from './components/common/Chatbot.jsx';
+import Spinner from './components/common/Spinner.jsx';
 
 // --- Páginas ---
-const HomePage = lazy(() => import('@/pages/HomePage.jsx'));
-const LoginPage = lazy(() => import('@/pages/LoginPage.jsx'));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage.jsx'));
-const ProductPage = lazy(() => import('@/pages/ProductPage.jsx'));
-const CartPage = lazy(() => import('@/pages/CartPage.jsx'));
-const CheckoutPage = lazy(() => import('@/pages/CheckoutPage.jsx'));
-const SearchResultsPage = lazy(() => import('@/pages/SearchResultsPage.jsx'));
-const PaymentSuccessPage = lazy(() => import('@/pages/PaymentSuccessPage.jsx'));
-const PaymentFailurePage = lazy(() => import('@/pages/PaymentFailurePage.jsx'));
-const PaymentPendingPage = lazy(() => import('@/pages/PaymentPendingPage.jsx'));
-const AboutPage = lazy(() => import('@/pages/AboutPage.jsx'));
-const AccountPage = lazy(() => import('@/pages/AccountPage.jsx'));
-const ContactPage = lazy(() => import('@/pages/ContactPage.jsx'));
-const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage.jsx'));
-const CatalogPage = lazy(() => import('@/pages/CatalogPage.jsx'));
-const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage.jsx'));
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));
+const CartPage = lazy(() => import('./pages/CartPage.jsx'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage.jsx'));
+const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage.jsx'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage.jsx'));
+const PaymentFailurePage = lazy(() => import('./pages/PaymentFailurePage.jsx'));
+const PaymentPendingPage = lazy(() => import('./pages/PaymentPendingPage.jsx'));
+const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
+const WishlistPage = lazy(() => import('./pages/WishListPage.jsx'));
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
+const CatalogPage = lazy(() => import('./pages/CatalogPage.jsx'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 
 // --- Layout y Páginas de Admin ---
-const AdminLayout = lazy(() => import('@/pages/AdminLayout.jsx'));
-const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage.jsx'));
-const AdminProductsPage = lazy(() => import('@/pages/AdminProductsPage.jsx'));
-const AdminProductFormPage = lazy(() => import('@/pages/AdminProductFormPage.jsx'));
-const AdminProductVariantsPage = lazy(() => import('@/pages/AdminProductVariantsPage.jsx'));
-const AdminOrdersPage = lazy(() => import('@/pages/AdminOrdersPage.jsx'));
-const AdminOrderDetailPage = lazy(() => import('@/pages/AdminOrderDetailPage.jsx'));
-const AdminUsersPage = lazy(() => import('@/pages/AdminUsersPage.jsx'));
+const AdminLayout = lazy(() => import('./pages/AdminLayout.jsx'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'));
+const AdminProductsPage = lazy(() => import('./pages/AdminProductsPage.jsx'));
+const AdminProductFormPage = lazy(() => import('./pages/AdminProductFormPage.jsx'));
+const AdminProductVariantsPage = lazy(() => import('./pages/AdminProductVariantsPage.jsx'));
+const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage.jsx'));
+const AdminOrderDetailPage = lazy(() => import('./pages/AdminOrderDetailPage.jsx'));
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'));
 
 
 const AppContent = () => {
@@ -57,12 +58,12 @@ const AppContent = () => {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
+  
+  // ¡ESTA ES LA MAGIA PARA QUE EL SCROLL VAYA ARRIBA SIEMPRE!
   useEffect(() => {
-    // ESTA ES LA LÍNEA MÁGICA QUE TE MANDA PARA ARRIBA
     window.scrollTo(0, 0);
 
-    // El resto de la lógica para cerrar modales
+    // De paso, cerramos todos los modales al cambiar de página
     setIsMenuOpen(false);
     setIsCartNotificationOpen(false);
     setIsSearchOpen(false);
@@ -152,6 +153,7 @@ const AppContent = () => {
             <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
+            <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

@@ -12,7 +12,7 @@ from database.models import Base, Categoria
 from routers import (
     health_router, auth_router, products_router, cart_router,
     admin_router, chatbot_router, checkout_router, orders_router,
-    user_router, categories_router, utils_router # <-- ÚNICA LÍNEA MODIFICADA EN LOS IMPORTS
+    user_router, categories_router, utils_router, wishlist_router
 )
 from utils.limiter import limiter, RateLimitExceeded, _rate_limit_exceeded_handler
 
@@ -100,4 +100,5 @@ app.include_router(checkout_router.router)
 app.include_router(orders_router.router)
 app.include_router(user_router.router)
 app.include_router(categories_router.router)
-app.include_router(utils_router.router) # <-- ÚNICA LÍNEA AGREGADA AL FINAL
+app.include_router(utils_router.router)
+app.include_router(wishlist_router.router)
