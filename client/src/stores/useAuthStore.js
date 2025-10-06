@@ -1,26 +1,8 @@
 // En FRONTEND/src/stores/useAuthStore.js
 import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
-import axios from 'axios';
+import axiosClient from '../hooks/axiosClient'; // <-- USA EL BUENO
 import { mergeCartAPI } from '../api/cartApi';
-
-const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 
 export const useAuthStore = create((set) => ({
   token: null,
@@ -30,7 +12,8 @@ export const useAuthStore = create((set) => ({
 
   fetchUser: async () => {
     try {
-      const response = await api.get('/auth/me');
+      // Usa el axiosClient que ya tiene la URL de Render y el token
+      const response = await axiosClient.get('/auth/me');
       set({ user: response.data });
       return response.data;
     } catch (error) {
@@ -64,14 +47,14 @@ export const useAuthStore = create((set) => ({
 
   logout: () => {
     localStorage.removeItem('authToken');
-    // --- LA SOLUCIÓN DEFINITIVA ESTÁ ACÁ ---
+    // LA SOLUCIÓN DEFINITIVA ESTÁ ACÁ
     // Al cerrar sesión, también eliminamos el ID del carrito de invitado.
     localStorage.removeItem('guestSessionId');
     // ------------------------------------
     set({ token: null, user: null, isAuthenticated: false, isAuthLoading: false });
   },
 
-  checkAuth: async () => { 
+  checkAuth: async () => {
     const token = localStorage.getItem('authToken');
     if (token) {
       try {
