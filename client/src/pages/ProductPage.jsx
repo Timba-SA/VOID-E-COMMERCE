@@ -8,7 +8,6 @@ import { NotificationContext } from '../context/NotificationContext';
 import { getProductById } from '../api/productsApi';
 import Spinner from '../components/common/Spinner';
 
-// ¡Importamos todo lo necesario para la wishlist!
 import { useAuthStore } from '../stores/useAuthStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getWishlistAPI, addToWishlistAPI, removeFromWishlistAPI } from '../api/wishListApi';
@@ -42,7 +41,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
     
-    // --- LÓGICA DE WISHLIST ---
     const { data: wishlist } = useQuery({
       queryKey: ['wishlist'],
       queryFn: getWishlistAPI,
@@ -69,7 +67,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
       const id = parseInt(productId);
       isWishlisted ? removeFromWishlistMutation.mutate(id) : addToWishlistMutation.mutate(id);
     };
-    // --- FIN LÓGICA DE WISHLIST ---
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -77,9 +74,7 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             setError(null);
             try {
                 const data = await getProductById(productId);
-                if (!data) {
-                    throw new Error(t('product_not_found'));
-                }
+                if (!data) throw new Error(t('product_not_found'));
                 setProduct(data);
 
                 if (data.variantes && data.variantes.length > 0) {
@@ -87,13 +82,8 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     if (firstAvailableVariant) {
                         const firstColor = firstAvailableVariant.color;
                         setSelectedColor(firstColor);
-                        
                         const firstSizeForColor = data.variantes.find(v => v.color === firstColor && v.cantidad_en_stock > 0);
-                        if (firstSizeForColor) {
-                            setSelectedSize(firstSizeForColor.tamanio);
-                        } else {
-                            setSelectedSize(null);
-                        }
+                        setSelectedSize(firstSizeForColor ? firstSizeForColor.tamanio : null);
                     } else {
                         const firstVariantEver = data.variantes[0];
                         if(firstVariantEver) {
@@ -111,13 +101,11 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             }
         };
         fetchProductData();
-        window.scrollTo(0, 0);
     }, [productId, notify, t]);
 
     const availableColors = useMemo(() => {
         if (!product?.variantes) return [];
-        const allColors = product.variantes.map(v => v.color);
-        return [...new Set(allColors)];
+        return [...new Set(product.variantes.map(v => v.color))];
     }, [product]);
 
     const availableSizesForSelectedColor = useMemo(() => {
@@ -128,27 +116,20 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             .sort((a, b) => {
                 const indexA = sizeOrder.indexOf(a.tamanio.toUpperCase());
                 const indexB = sizeOrder.indexOf(b.tamanio.toUpperCase());
-                if (indexA === -1) return 1;
-                if (indexB === -1) return -1;
+                if (indexA === -1) return 1; if (indexB === -1) return -1;
                 return indexA - indexB;
             });
     }, [product, selectedColor]);
 
     const isSelectionOutOfStock = useMemo(() => {
         if (!selectedColor) return false;
-        const hasStockForColor = product.variantes.some(v => v.color === selectedColor && v.cantidad_en_stock > 0);
-        if (!hasStockForColor) return true;
+        if (!product.variantes.some(v => v.color === selectedColor && v.cantidad_en_stock > 0)) return true;
         if (selectedSize) {
             const variant = product.variantes.find(v => v.color === selectedColor && v.tamanio === selectedSize);
             return !variant || variant.cantidad_en_stock <= 0;
         }
         return false;
     }, [product, selectedColor, selectedSize]);
-
-    const getColorTranslationKey = (dbColor) => {
-        const colorMapping = { 'negro': 'black', 'blanco': 'white', 'gris': 'grey', 'marrón': 'brown', 'beige': 'beige', 'azul': 'blue' };
-        return colorMapping[dbColor.toLowerCase()] || dbColor.toLowerCase();
-    };
 
     const handleColorSelect = (color) => {
         setSelectedColor(color);
@@ -167,17 +148,18 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             return;
         }
         const itemToAdd = {
-            variante_id: selectedVariant.id,
-            quantity: 1,
-            price: product.precio,
-            name: product.nombre,
-            image_url: product.urls_imagenes[0] || null,
-            size: selectedVariant.tamanio,
-            color: selectedVariant.color,
+            variante_id: selectedVariant.id, quantity: 1, price: product.precio,
+            name: product.nombre, image_url: product.urls_imagenes[0] || null,
+            size: selectedVariant.tamanio, color: selectedVariant.color,
         };
         addItemToCart(itemToAdd);
         onSetAddedItem(itemToAdd);
         onOpenCartModal();
+    };
+    
+    const getColorTranslationKey = (dbColor) => {
+        const colorMapping = { 'negro': 'black', 'blanco': 'white', 'gris': 'grey', 'marrón': 'brown', 'beige': 'beige', 'azul': 'blue' };
+        return colorMapping[dbColor.toLowerCase()] || dbColor.toLowerCase();
     };
 
     if (loading) return <Spinner message={t('product_loading')} />;
@@ -196,24 +178,12 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
             <div className="product-details-container-full">
                 <div className="product-images-column">
                   {imageUrls.map((url, index) => (
-                    <img 
-                      key={index} 
-                      src={transformCloudinaryUrl(url, 900)}
-                      alt={`${product.nombre} - vista ${index + 1}`} 
-                    />
+                    <img key={index} src={transformCloudinaryUrl(url, 900)} alt={`${product.nombre} - vista ${index + 1}`} />
                   ))}
                 </div>
                 
                 <div className="product-info-panel-full">
-                    <div className="product-header">
-                        <h1 className="product-name">{product.nombre}</h1>
-                        {isAuthenticated && (
-                          <button onClick={handleWishlistToggle} className="wishlist-button-detail">
-                            <Heart size={24} className={isWishlisted ? 'wishlisted' : ''} />
-                          </button>
-                        )}
-                    </div>
-
+                    <h1 className="product-name">{product.nombre}</h1>
                     <p className="product-price">{formatPrice(product.precio)}</p>
                     
                     <div className="product-selector">
@@ -242,9 +212,17 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         <p>{product.descripcion || t('product_no_description')}</p>
                     </div>
                     
-                    <button onClick={handleAddToCart} disabled={isSelectionOutOfStock || !selectedSize} className="add-to-cart-button">
-                        {isSelectionOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}
-                    </button>
+                    {/* ¡ACÁ ESTÁ EL CAMBIO DE DISEÑO! */}
+                    <div className="product-actions">
+                        <button onClick={handleAddToCart} disabled={isSelectionOutOfStock || !selectedSize} className="add-to-cart-button">
+                            {isSelectionOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}
+                        </button>
+                        {isAuthenticated && (
+                            <button onClick={handleWishlistToggle} className="wishlist-button-detail" title={isWishlisted ? 'Quitar de Wishlist' : 'Añadir a Wishlist'}>
+                                <Heart size={24} className={isWishlisted ? 'wishlisted' : ''} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </main>

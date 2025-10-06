@@ -3,13 +3,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
+from sqlalchemy.orm import joinedload # ¡Importamos la magia!
 from typing import List
 
 from database.database import get_db
 from database.models import WishlistItem, Producto
 from services.auth_services import get_current_user
 from schemas.user_schemas import UserOut
-from schemas.product_schemas import Product as ProductSchema # Para la respuesta
+from schemas.product_schemas import Product as ProductSchema
 
 router = APIRouter(
     prefix="/api/wishlist",
@@ -23,7 +24,6 @@ async def get_wishlist(
     current_user: UserOut = Depends(get_current_user)
 ):
     """Devuelve una lista de productos en la wishlist del usuario actual."""
-    # Buscamos los IDs de productos que el usuario guardó
     stmt = select(WishlistItem.producto_id).where(WishlistItem.usuario_id == current_user.id)
     result = await db.execute(stmt)
     product_ids = result.scalars().all()
@@ -31,8 +31,8 @@ async def get_wishlist(
     if not product_ids:
         return []
 
-    # Con esos IDs, buscamos los productos completos
-    product_stmt = select(Producto).where(Producto.id.in_(product_ids))
+    # ¡ACÁ ESTÁ EL ARREGLO! Le decimos que cargue también los detalles (variantes) de cada producto.
+    product_stmt = select(Producto).options(joinedload(Producto.variantes)).where(Producto.id.in_(product_ids))
     product_result = await db.execute(product_stmt)
     products = product_result.scalars().unique().all()
     
@@ -45,7 +45,6 @@ async def add_to_wishlist(
     current_user: UserOut = Depends(get_current_user)
 ):
     """Añade un producto a la wishlist del usuario actual."""
-    # Verificamos si ya existe para no duplicar
     existing_item = await db.execute(
         select(WishlistItem).where(
             WishlistItem.usuario_id == current_user.id,
@@ -55,7 +54,6 @@ async def add_to_wishlist(
     if existing_item.scalars().first():
         return {"message": "El producto ya está en tu wishlist."}
 
-    # Verificamos que el producto exista
     product = await db.get(Producto, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")

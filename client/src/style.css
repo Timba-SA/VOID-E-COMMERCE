@@ -1556,9 +1556,10 @@ body:has(.product-details-container-full) .main-header {
   color: #000;
 }
 /* =================================================================== */
-/* 13. ESTILOS PARA EL BOTÓN DE WISHLIST
+/* 13. ESTILOS PARA EL BOTÓN DE WISHLIST (VERSIÓN FINAL)
 /* =================================================================== */
 
+/* --- Corazón en la TARJETA DE PRODUCTO (Catálogo) --- */
 .wishlist-button {
   position: absolute;
   top: 0.75rem;
@@ -1572,22 +1573,68 @@ body:has(.product-details-container-full) .main-header {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0; /* Oculto por defecto */
-  transition: opacity 0.3s ease, background-color 0.3s ease;
+  opacity: 1; /* SIEMPRE VISIBLE */
+  transition: all 0.3s ease;
   z-index: 10;
 }
 
-.catalog-product-image-container:hover .wishlist-button {
-  opacity: 1; /* Aparece cuando pasás el mouse por la imagen */
+.wishlist-button:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
 }
 
 .wishlist-button svg {
   transition: all 0.2s ease;
-  stroke: #333; /* Color del borde del corazón */
-  fill: none; /* Sin relleno por defecto */
+  stroke: #333;
+  fill: none;
 }
 
 .wishlist-button svg.wishlisted {
-  fill: #e63946; /* Se pinta de rojo cuando está en la wishlist */
+  fill: #e63946;
+  stroke: #e63946;
+}
+
+/* =================================================================== */
+/* 14. ESTILOS PARA LA PÁGINA DE PRODUCTO (NUEVO DISEÑO DE BOTONES)
+/* =================================================================== */
+
+.product-actions {
+  display: flex; /* <-- Los pone en fila */
+  gap: 1rem; /* <-- Espacio entre los botones */
+  margin-top: 1.5rem;
+  align-items: stretch; /* <-- Para que ambos botones tengan el mismo alto */
+}
+
+.add-to-cart-button {
+    flex-grow: 1; /* <-- Hace que el botón de añadir al carrito ocupe el espacio disponible */
+}
+
+/* --- Botón de Wishlist en la PÁGINA DE PRODUCTO (ESTILO FACHERO) --- */
+.wishlist-button-detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #000;
+  color: #000;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0; /* Evita que se encoja */
+  aspect-ratio: 1 / 1; /* Lo hace perfectamente cuadrado */
+}
+
+.wishlist-button-detail:hover {
+  background-color: #f5f5f5;
+}
+
+.wishlist-button-detail svg {
+  transition: all 0.2s ease;
+  stroke: #333;
+  fill: none;
+}
+
+.wishlist-button-detail svg.wishlisted {
+  fill: #e63946;
   stroke: #e63946;
 }
