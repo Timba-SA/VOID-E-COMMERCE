@@ -16,9 +16,21 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
     const [query, setQuery] = useState('');
     const [isLangOpen, setIsLangOpen] = useState(false);
     const searchInputRef = useRef(null);
-    const langDropdownRef = useRef(null); // <-- Ref para el menú de idioma
+    const langDropdownRef = useRef(null);
 
-    // --- EFECTO PARA CERRAR EL MENÚ AL HACER CLICK AFUERA ---
+    const {
+      data: searchResults,
+      isLoading: isSearchLoading
+    } = useQuery({
+      queryKey: ['searchProducts', query],
+      queryFn: () => getProducts({ q: query, limit: 5 }),
+      // ===============================================
+      // ¡ACÁ ESTÁ EL CAMBIO! De 2 lo pasé a 1
+      // ===============================================
+      enabled: query.length > 1, 
+      staleTime: 1000 * 60 * 5,
+    });
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
@@ -26,9 +38,7 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -98,14 +108,27 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
                 </div>
               )}
               
-              {isSearching && query.length > 2 && (
+              {isSearching && query.length > 1 && (
                 <div className="search-results-dropdown">
-                  {/* ...código de resultados de búsqueda... */}
+                  {isSearchLoading && <div className="search-result-item">Buscando...</div>}
+                  {!isSearchLoading && searchResults && searchResults.length === 0 && (
+                    <div className="search-result-item">No se encontraron resultados.</div>
+                  )}
+                  {searchResults && searchResults.map(product => (
+                    <Link 
+                      key={product.id} 
+                      to={`/product/${product.id}`} 
+                      className="search-result-item"
+                      onClick={handleResultClick}
+                    >
+                      <img src={product.urls_imagenes?.[0] || '/img/placeholder.jpg'} alt={product.nombre} />
+                      <span>{product.nombre}</span>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
             
-            {/* --- ACÁ ESTÁ EL CAMBIO DE LÓGICA --- */}
             <div className="language-selector" ref={langDropdownRef}>
               <a style={{cursor: 'pointer'}} onClick={() => setIsLangOpen(!isLangOpen)}>{t('nav_language')}</a>
               {isLangOpen && (
