@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 
 const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
-const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
+// SACAMOS LA LÓGICA DEL LOGO FANTASMA DE ACÁ PORQUE NO LA NECESITAMOS MÁS
+const DropdownMenu = ({ isOpen, onClose, onOpenSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentSubCategory = location.pathname.split('/')[2] || '';
@@ -70,37 +71,20 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
     onOpenSearch();
   };
 
-  const phantomLogoStyle = logoPosition ? {
-    position: 'fixed',
-    top: `${logoPosition.top}px`,
-    left: `${logoPosition.left}px`,
-    width: `${logoPosition.width}px`,
-    height: `${logoPosition.height}px`,
-    color: 'var(--text-color)',
-    fontFamily: 'var(--font-logo)',
-    fontSize: '60px',
-    fontWeight: '400',
-    letterSpacing: '0.05em',
-    lineHeight: '1',
-    zIndex: 2003,
-    pointerEvents: 'none',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-  } : {};
-
   return (
     <>
       <div className={`overlay ${isOpen ? 'active' : ''}`} onClick={onClose} />
       
       <aside className={`dropdown-menu ${isOpen ? 'open' : ''}`}>
-        {isOpen && logoPosition && <div style={phantomLogoStyle}>VOID</div>}
+        {/* CHAU LOGO FANTASMA */}
 
         <div className="dropdown-header">
           <button className={`close-btn ${isOpen ? 'open' : ''}`} aria-label="Cerrar menú" onClick={onClose}>
             <span/><span/><span/>
           </button>
-          <Link to="/" className="dropdown-logo" onClick={onClose} style={{ visibility: 'hidden' }}>VOID</Link>
+          
+          {/* ¡ACÁ ESTÁ EL CAMBIO! Le sacamos el "visibility: hidden" para que se vea siempre */}
+          <Link to="/" className="dropdown-logo" onClick={onClose}>VOID</Link>
         </div>
 
         <div className="dropdown-content">
@@ -170,7 +154,6 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
 
           <div className="dropdown-footer">
             <div className="footer-images">
-              {/* ¡ACÁ ESTÁ EL ARREGLO! LE SAQUÉ EL /img/ */}
               <div className="footer-image left"><img src="/dropdownIzquierda.jpg" alt="Carretera" /></div>
               <div className="footer-image right"><img src="/dropdownDerecha.jpg" alt="Autopista" /></div>
             </div>
