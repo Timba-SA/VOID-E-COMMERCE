@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useTranslation } from 'react-i18next'; // Importar
+import { useTranslation } from 'react-i18next';
 import { getUsersAPI, updateUserRoleAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
 const AdminUsersPage = () => {
-  const { t } = useTranslation(); // Inicializar
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,37 +52,39 @@ const AdminUsersPage = () => {
 
       {error && <h2 className="error-message" style={{marginBottom: '1rem'}}>{error}</h2>}
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>{t('admin_users_table_id')}</th>
-            <th>{t('admin_users_table_name')}</th>
-            <th>{t('admin_users_table_email')}</th>
-            <th>{t('admin_users_table_role')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.length > 0 ? (
-            users.map(user => (
-              <tr key={user._id}>
-                <td title={user._id}>{user._id ? user._id.slice(-6) : 'N/A'}...</td>
-                <td>{user.name} {user.last_name}</td>
-                <td>{user.email}</td>
-                <td>
-                  <select value={user.role} onChange={(e) => handleRoleChange(user._id, e.target.value)} className="role-select">
-                      <option value="user">{t('admin_users_role_user')}</option>
-                      <option value="admin">{t('admin_users_role_admin')}</option>
-                  </select>
-                </td>
-              </tr>
-            ))
-          ) : (
+      <div className="table-responsive-wrapper">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan="4" style={{textAlign: 'center'}}>{t('admin_users_none')}</td>
+              <th>{t('admin_users_table_id')}</th>
+              <th>{t('admin_users_table_name')}</th>
+              <th>{t('admin_users_table_email')}</th>
+              <th>{t('admin_users_table_role')}</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.length > 0 ? (
+              users.map(user => (
+                <tr key={user._id}>
+                  <td title={user._id}>{user._id ? user._id.slice(-6) : 'N/A'}...</td>
+                  <td>{user.name} {user.last_name}</td>
+                  <td>{user.email}</td>
+                  <td>
+                    <select value={user.role} onChange={(e) => handleRoleChange(user._id, e.target.value)} className="role-select">
+                        <option value="user">{t('admin_users_role_user')}</option>
+                        <option value="admin">{t('admin_users_role_admin')}</option>
+                    </select>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" style={{textAlign: 'center'}}>{t('admin_users_none')}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
