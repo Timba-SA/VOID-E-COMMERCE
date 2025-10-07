@@ -1707,85 +1707,152 @@ body:has(.product-details-container-full) .main-header {
   }
 }
 /* =================================================================== */
-/* 16. ESTILOS RESPONSIVE PARA EL PANEL DE ADMIN
+/* 16. ESTILOS PARA EL PANEL DE ADMIN (DEFINITIVO)
 /* =================================================================== */
 
+/* --- ESTILOS BASE (PARA PC / NOTEBOOK) --- */
+
 .admin-dashboard-container {
-  flex-direction: column; /* La barra lateral se pone arriba del contenido */
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+  background-color: #f8f9fa;
 }
 
 .admin-sidebar {
-  flex: none; /* Sacamos el ancho fijo */
-  width: 100%;
-  height: auto;
-  min-height: auto;
-  padding: 1rem;
-  flex-direction: row; /* Los elementos del menú se ponen en fila */
-  justify-content: space-between;
-  align-items: center;
-  position: relative; /* Para que el menú no se vaya a cualquier lado */
+  flex: 0 0 240px; /* Ancho fijo para la barra lateral */
+  background-color: #000000;
+  color: #fff;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column; /* El menú es una columna vertical */
 }
 
-/* El botón de menú que creamos */
-#admin-menu-toggle {
-  display: block; /* Hacemos que se vea */
-  background-color: #333;
-  color: white;
-  border: 1px solid #555;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  order: -1; /* Lo pone al principio de todo */
-}
-
-/* Escondemos la navegación por defecto en celu */
 .admin-sidebar nav {
-  display: none;
-  position: absolute;
-  top: 100%; /* Justo abajo del header */
-  left: 0;
-  width: 100%;
-  background-color: #000;
-  padding: 1rem;
-  z-index: 10;
-  border-top: 1px solid #333;
-}
-
-/* Cuando el menú está abierto, se muestra */
-.admin-sidebar nav.open {
-  display: block;
+  display: block; /* La navegación siempre es visible en PC */
+  flex-grow: 1;
 }
 
 .admin-sidebar nav a {
-  border-left: none; /* Sacamos el borde lateral */
-  padding-left: 0;
-  margin-bottom: 0.5rem;
+  display: block;
+  padding: 0.75rem 0;
+  color: #a0a0a0;
+  font-weight: 500;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.admin-sidebar nav a:hover {
+  color: #fff;
 }
 
 .admin-sidebar nav a.active {
-  padding-left: 0;
-  border-left: none;
-  text-decoration: underline; /* Lo subrayamos para que se note cuál está activo */
+  color: #fff;
+  border-left: 3px solid #fff;
+  padding-left: calc(1rem - 3px);
 }
 
 .admin-sidebar .account-logout-btn {
-  margin-top: 0; /* Sacamos el margen de arriba */
+  background: none;
+  border: 1px solid #6c757d;
+  color: #a0a0a0;
+  margin-top: 2rem;
 }
 
 .admin-content {
-  padding: 1.5rem 1rem; /* Menos padding para que entre más contenido */
+  flex-grow: 1;
+  padding: 2.5rem 3rem;
+  overflow-y: auto;
 }
 
-/* El wrapper mágico para las tablas */
+/* El botón de menú móvil ESTÁ OCULTO en PC */
+#admin-menu-toggle {
+  display: none;
+}
+
+/* El wrapper para que las tablas scrolleen */
 .table-responsive-wrapper {
-  overflow-x: auto; /* ¡LA CLAVE! Habilita el scroll horizontal */
-  -webkit-overflow-scrolling: touch; /* Para que ande suave en iOS */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+  margin-top: 1rem;
 }
 
 .admin-table {
-  min-width: 700px; /* Un ancho mínimo para que el scroll se active */
-  border: none; /* Le sacamos el borde a la tabla porque ya lo tiene el wrapper */
+  min-width: 700px;
+  border: none;
+}
+
+
+/* --- ESTILOS RESPONSIVE (PARA CELULARES) --- */
+@media (max-width: 768px) {
+  .admin-dashboard-container {
+    flex-direction: column; /* La barra se pone arriba del contenido */
+  }
+
+  .admin-sidebar {
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    padding: 1rem;
+    flex-direction: row; /* Los elementos se ponen en fila */
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+  }
+
+  /* El botón de menú móvil AHORA SÍ APARECE */
+  #admin-menu-toggle {
+    display: block;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    order: -1;
+  }
+
+  /* La navegación está OCULTA por defecto en celu */
+  .admin-sidebar nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #000;
+    padding: 1rem;
+    z-index: 10;
+    border-top: 1px solid #333;
+  }
+
+  /* Y se muestra cuando hacemos clic en el botón */
+  .admin-sidebar nav.open {
+    display: block;
+  }
+
+  .admin-sidebar nav a {
+    border-left: none;
+    padding-left: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .admin-sidebar nav a.active {
+    padding-left: 0;
+    border-left: none;
+    text-decoration: underline;
+  }
+
+  .admin-sidebar .account-logout-btn {
+    margin-top: 0;
+  }
+
+  .admin-content {
+    padding: 1.5rem 1rem;
+  }
 }
