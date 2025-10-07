@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuthStore } from '../stores/useAuthStore';
 import { NotificationContext } from './NotificationContext';
-import { fetchCartAPI, addItemToCartAPI, removeItemFromCartAPI, getGuestSessionAPI } from '../api/cartApi';
+import { fetchCartAPI, addItemToCartAPI, removeItemFromCartAPI, getGuestSessionAPI, updateItemQuantityAPI } from '../api/cartApi'; // <-- ¡Importamos la nueva!
 
 export const CartContext = createContext();
 
@@ -66,6 +66,24 @@ export const CartProvider = ({ children }) => {
       notify(error.message || "No se pudo eliminar el producto.", 'error');
     }
   };
+  
+  // --- ¡NUEVA FUNCIÓN PARA EL CONTEXTO! ---
+  const updateItemQuantity = async (variante_id, quantity) => {
+    if (quantity <= 0) {
+      // Si la cantidad es 0 o menos, mejor lo borramos.
+      removeItemFromCart(variante_id);
+      return;
+    }
+    try {
+      const updatedCart = await updateItemQuantityAPI(variante_id, quantity);
+      setCart(updatedCart);
+      // No ponemos notificación acá para que no sea molesto
+    } catch (error) {
+      console.error("Error al actualizar la cantidad:", error);
+      notify(error.message || "No se pudo actualizar la cantidad.", 'error');
+    }
+  };
+
 
   const value = {
     cart,
@@ -74,6 +92,7 @@ export const CartProvider = ({ children }) => {
     itemCount: cart?.items?.reduce((total, item) => total + item.quantity, 0) || 0,
     addItemToCart,
     removeItemFromCart,
+    updateItemQuantity, // <-- La agregamos acá para que esté disponible en toda la app
   };
 
   return (

@@ -1,3 +1,4 @@
+// En client/src/pages/CartPage.jsx
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next'; // <-- 1. IMPORTAMOS LA MAGIA
@@ -8,7 +9,7 @@ import Spinner from '../components/common/Spinner';
 const CartPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation(); // <-- 2. INICIALIZAMOS EL TRADUCTOR
-    const { cart, loading, removeItemFromCart } = useContext(CartContext);
+    const { cart, loading, removeItemFromCart, updateItemQuantity } = useContext(CartContext);
     const { isAuthenticated } = useAuthStore();
 
     const handleCheckout = () => {
@@ -65,7 +66,24 @@ const CartPage = () => {
                                         <p>{item.name}</p>
                                         <p>{t('cart_size', { size: item.size })}</p>
                                     </div>
+                                    
+                                    {/* ========= ¡ACÁ ESTÁ EL CAMBIO, PAPÁ! ========= */}
                                     <div className="item-actions">
+                                        <div className="quantity-selector">
+                                            <button 
+                                                className="quantity-btn" 
+                                                onClick={() => updateItemQuantity(item.variante_id, item.quantity - 1)}
+                                            >
+                                                -
+                                            </button>
+                                            <span className="quantity-display">{item.quantity}</span>
+                                            <button 
+                                                className="quantity-btn" 
+                                                onClick={() => updateItemQuantity(item.variante_id, item.quantity + 1)}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
                                         <span className="item-price">{formatPrice(item.price * item.quantity)} ARS</span>
                                         <button 
                                             onClick={() => removeItemFromCart(item.variante_id)} 
@@ -74,6 +92,8 @@ const CartPage = () => {
                                             {t('cart_remove')}
                                         </button>
                                     </div>
+                                    {/* ========= FIN DEL CAMBIO ========= */}
+
                                 </div>
                             ))}
                         </div>

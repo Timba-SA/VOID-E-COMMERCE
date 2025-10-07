@@ -17,11 +17,6 @@ class CartItem(BaseModel):
     size: Optional[str] = None # <-- ¡AGREGAMOS ESTA LÍNEA!
 
 # Molde para el objeto principal del carrito
-# En backend/schemas/cart_schemas.py
-
-# ... (el resto del archivo igual)
-
-# Molde para el objeto principal del carrito
 class Cart(BaseModel):
     id: Optional[PyObjectId] = Field(None, alias="_id")
     user_id: Optional[PyObjectId] = None # <-- ¡ACÁ ESTÁ LA JUGADA!
@@ -33,3 +28,8 @@ class Cart(BaseModel):
         populate_by_name = True,
         arbitrary_types_allowed = True
     )
+
+# --- ¡AGREGÁ ESTO AL FINAL! ---
+# Molde para actualizar la cantidad de un item
+class CartItemUpdate(BaseModel):
+    quantity: int = Field(..., gt=0)

@@ -46,6 +46,21 @@ export const removeItemFromCartAPI = async (varianteId) => {
   }
 };
 
+// --- ¡NUEVA FUNCIÓN PARA ACTUALIZAR! ---
+export const updateItemQuantityAPI = async (varianteId, quantity) => {
+  try {
+    const response = await axiosClient.put(`/cart/items/${varianteId}`, 
+      { quantity }, // El cuerpo de la petición con la nueva cantidad
+      { headers: getCartHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating item quantity:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+
 export const getGuestSessionAPI = async () => {
   try {
     const response = await axiosClient.get('/cart/session/guest');

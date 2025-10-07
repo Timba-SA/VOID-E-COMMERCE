@@ -90,6 +90,37 @@ async def add_item_to_cart(
          raise HTTPException(status_code=404, detail="No se pudo encontrar o crear el carrito.")
     return cart_schemas.Cart(**serialize_cart(updated_cart))
 
+# --- ¡ACÁ VA LA NUEVA RUTA MÁGICA! ---
+@router.put("/items/{variante_id}", response_model=cart_schemas.Cart, summary="Actualizar la cantidad de un item")
+async def update_item_quantity(
+    variante_id: int,
+    item_update: cart_schemas.CartItemUpdate, # Usa el nuevo schema
+    guest_session_id: Optional[str] = Header(None, alias="X-Guest-Session-ID"),
+    db: Database = Depends(get_db_nosql),
+    current_user: Optional[dict] = Depends(get_current_user_optional)
+):
+    identifier = get_session_identifier(current_user, guest_session_id)
+    
+    # Si la cantidad es 0 o menos, Pydantic ya nos va a tirar un error, ¡joya!
+    
+    # Buscamos el carrito y el item específico, y le clavamos la nueva cantidad.
+    result = await db.carts.update_one(
+        {**identifier, "items.variante_id": variante_id},
+        {
+            "$set": {
+                "items.$.quantity": item_update.quantity,
+                "last_updated": datetime.now()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Item o carrito no encontrado.")
+        
+    updated_cart = await db.carts.find_one(identifier)
+    return cart_schemas.Cart(**serialize_cart(updated_cart))
+
+
 @router.delete("/items/{variante_id}", response_model=cart_schemas.Cart, summary="Eliminar un item del carrito")
 async def remove_item_from_cart(
     variante_id: int, 
