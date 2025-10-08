@@ -1856,3 +1856,51 @@ body:has(.product-details-container-full) .main-header {
     padding: 1.5rem 1rem;
   }
 }
+/* =================================================================== */
+/* 17. MEJORAS VISUALES - ANIMACIÓN TÍTULO "THE NEW"
+/* =================================================================== */
+
+/* Es importante que cada letra sea un bloque para poder animarla verticalmente */
+.title-the-new-text span {
+    display: inline-block;
+}
+
+
+/* =================================================================== */
+/* 18. MEJORAS VISUALES - PÁGINA DE PRODUCTO (PARALLAX)
+/* =================================================================== */
+
+/* Este es el nuevo contenedor para cada imagen que permite el efecto */
+.product-image-wrapper {
+    overflow: hidden;
+}
+
+/* A la imagen dentro del contenedor le quitamos cualquier estilo previo y la preparamos para la animación */
+.product-image-parallax {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+
+/* =================================================================== */
+/* 19. MEJORAS VISUALES - PÁGINA DEL CARRITO
+/* =================================================================== */
+
+/* Modificamos el contenedor principal para quitarle el borde inferior que ya no necesitamos */
+.cart-items-list {
+    border-bottom: none;
+}
+
+/* Y agregamos la línea divisoria a cada producto individualmente */
+.cart-item-row.with-divider {
+  border-bottom: 1px solid #e5e7eb; /* Un gris muy sutil */
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Finalmente, nos aseguramos de que el último producto no tenga la línea debajo */
+.cart-items-list .cart-item-row.with-divider:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}

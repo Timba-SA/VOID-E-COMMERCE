@@ -1,6 +1,6 @@
-// En client/src/pages/ProductPage.jsx
+// client/src/pages/ProductPage.jsx
 
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CartContext } from '../context/CartContext';
@@ -12,6 +12,13 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getWishlistAPI, addToWishlistAPI, removeFromWishlistAPI } from '../api/wishListApi';
 import { Heart } from 'lucide-react';
+
+// ¡Importamos GSAP y ScrollTrigger!
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// ¡Registramos el plugin!
+gsap.registerPlugin(ScrollTrigger);
 
 const transformCloudinaryUrl = (url, width) => {
   if (!url || !url.includes('cloudinary')) return url;
@@ -25,6 +32,7 @@ const getSafeImageUrls = (urls) => {
     }
     return ['/img/placeholder.jpg'];
 };
+
 
 const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     const { t } = useTranslation();
@@ -40,6 +48,9 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
+    
+    // ¡NUEVO! Creamos una referencia al contenedor de las imágenes
+    const imageContainerRef = useRef(null);
     
     const { data: wishlist } = useQuery({
       queryKey: ['wishlist'],
@@ -102,6 +113,28 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
         };
         fetchProductData();
     }, [productId, notify, t]);
+
+    // ¡AQUÍ ESTÁ LA MAGIA DEL PARALLAX!
+    useEffect(() => {
+        if (!loading && product && imageContainerRef.current) {
+            // Seleccionamos todas las imágenes dentro del contenedor
+            const images = gsap.utils.toArray('.product-image-parallax');
+
+            // Creamos una animación para cada imagen
+            images.forEach(img => {
+                gsap.to(img, {
+                    yPercent: -10, // Mueve la imagen hacia arriba un 10% de su altura
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: img,
+                        start: "top bottom", // La animación empieza cuando la parte de arriba de la imagen toca la parte de abajo de la pantalla
+                        end: "bottom top", // y termina cuando la parte de abajo de la imagen toca la de arriba de la pantalla
+                        scrub: true // Esto hace que la animación se vincule directamente al scroll
+                    }
+                });
+            });
+        }
+    }, [loading, product]); // Se ejecuta cuando el producto termina de cargar
 
     const availableColors = useMemo(() => {
         if (!product?.variantes) return [];
@@ -176,9 +209,15 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
     return (
         <main>
             <div className="product-details-container-full">
-                <div className="product-images-column">
+                <div className="product-images-column" ref={imageContainerRef} style={{ overflow: 'hidden' }}>
                   {imageUrls.map((url, index) => (
-                    <img key={index} src={transformCloudinaryUrl(url, 900)} alt={`${product.nombre} - vista ${index + 1}`} />
+                    <div key={index} className="product-image-wrapper">
+                        <img 
+                            src={transformCloudinaryUrl(url, 900)} 
+                            alt={`${product.nombre} - vista ${index + 1}`} 
+                            className="product-image-parallax"
+                        />
+                    </div>
                   ))}
                 </div>
                 
@@ -212,7 +251,6 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                         <p>{product.descripcion || t('product_no_description')}</p>
                     </div>
                     
-                    {/* ¡ACÁ ESTÁ EL CAMBIO DE DISEÑO! */}
                     <div className="product-actions">
                         <button onClick={handleAddToCart} disabled={isSelectionOutOfStock || !selectedSize} className="add-to-cart-button">
                             {isSelectionOutOfStock ? t('product_out_of_stock_button') : t('product_add_to_bag_button')}

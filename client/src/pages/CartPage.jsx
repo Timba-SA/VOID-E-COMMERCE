@@ -1,14 +1,14 @@
-// En client/src/pages/CartPage.jsx
+// client/src/pages/CartPage.jsx
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next'; // <-- 1. IMPORTAMOS LA MAGIA
+import { useTranslation } from 'react-i18next';
 import { CartContext } from '../context/CartContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import Spinner from '../components/common/Spinner';
 
 const CartPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation(); // <-- 2. INICIALIZAMOS EL TRADUCTOR
+    const { t } = useTranslation();
     const { cart, loading, removeItemFromCart, updateItemQuantity } = useContext(CartContext);
     const { isAuthenticated } = useAuthStore();
 
@@ -31,12 +31,11 @@ const CartPage = () => {
 
     if (loading) return <main className="cart-page-container"><Spinner message="Cargando carrito..." /></main>;
 
-    const subtotal = cart?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+    const subtotal = cart?.items.reduce((sum, item) => sum + item.quantity * item.price, 0) || 0;
     const orderTotal = subtotal;
 
     return (
         <main className="cart-page-container">
-            {/* --- 3. ACÁ EMPIEZAN LOS CAMBIOS --- */}
             <h1 className="cart-page-title">{t('cart_title')}</h1>
             
             <div className="cart-content">
@@ -57,7 +56,7 @@ const CartPage = () => {
                     <>
                         <div className="cart-items-list">
                             {cart.items.map(item => (
-                                <div className="cart-item-row" key={item.variante_id}>
+                                <div className="cart-item-row with-divider" key={item.variante_id}>
                                     <div className="item-image">
                                         <img src={item.image_url || '/img/placeholder.jpg'} alt={item.name} />
                                     </div>
@@ -67,7 +66,6 @@ const CartPage = () => {
                                         <p>{t('cart_size', { size: item.size })}</p>
                                     </div>
                                     
-                                    {/* ========= ¡ACÁ ESTÁ EL CAMBIO, PAPÁ! ========= */}
                                     <div className="item-actions">
                                         <div className="quantity-selector">
                                             <button 
@@ -92,8 +90,6 @@ const CartPage = () => {
                                             {t('cart_remove')}
                                         </button>
                                     </div>
-                                    {/* ========= FIN DEL CAMBIO ========= */}
-
                                 </div>
                             ))}
                         </div>

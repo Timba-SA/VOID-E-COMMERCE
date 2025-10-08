@@ -1,6 +1,6 @@
 // client/src/pages/HomePage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getProducts } from '../api/productsApi';
@@ -13,10 +13,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
+  const titleRef = useRef(null); // Referencia para el título
 
   useEffect(() => {
-    // SACAMOS LA ANIMACIÓN GSAP DE LAS IMÁGENES DE ACÁ PARA QUE NO JODA
-    
     const fetchAndAnimateProducts = async () => {
       try {
         const fetchedProducts = await getProducts({ limit: 6 });
@@ -28,13 +27,36 @@ const HomePage = () => {
 
     fetchAndAnimateProducts();
 
+    // ¡LA NUEVA ANIMACIÓN DEL TÍTULO!
+    if (titleRef.current) {
+        const el = titleRef.current;
+        const chars = el.innerText.split('');
+        el.innerHTML = chars.map(char => `<span>${char === ' ' ? '&nbsp;' : char}</span>`).join('');
+
+        gsap.fromTo(el.children,
+            { y: 50, opacity: 0 },
+            {
+                y: 0,
+                opacity: 1,
+                duration: 1.2,
+                stagger: 0.08,
+                ease: 'power4.out',
+                scrollTrigger: {
+                    trigger: el,
+                    start: 'top 85%',
+                }
+            }
+        );
+    }
+
     gsap.to(".new-arrivals", {
       opacity: 1,
       y: 0,
       duration: 1.5,
       delay: 0.5
     });
-  }, []);
+
+  }, []); // El array vacío asegura que la animación del título se configure una sola vez
 
   useEffect(() => {
     if (products.length > 0) {
@@ -59,7 +81,6 @@ const HomePage = () => {
     <main className="home-page">
       <section className="hero-section">
         <div className="hero-image-left">
-          {/* USAMOS LA NUEVA CLASE DE CSS */}
           <img
             src={portadaIzquierda}
             alt="Modelo con prenda vanguardista"
@@ -67,7 +88,6 @@ const HomePage = () => {
           />
         </div>
         <div className="hero-image-right">
-          {/* Y ACÁ TAMBIÉN */}
           <img
             src={portadaDerecha}
             alt="Modelo con traje sastre oscuro"
@@ -78,7 +98,7 @@ const HomePage = () => {
 
       <section className="new-arrivals">
         <div className="title-the-new-container">
-            <h2 className="title-the-new-text">THE NEW</h2>
+            <h2 className="title-the-new-text" ref={titleRef}>THE NEW</h2>
             <div className="title-the-new-line"></div>
         </div>
 
