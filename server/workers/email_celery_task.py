@@ -11,7 +11,8 @@ from celery_worker import celery_app
 
 # Importamos los servicios que necesitamos
 from services import ia_services, email_service
-from database.database import AsyncSessionLocal
+from services.ia_services import IAServiceError
+from database import database
 
 # Configuración del logger (sin cambios)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -43,7 +44,7 @@ async def check_and_process_emails():
             logger.info(f"Se encontraron {len(unread_emails)} emails nuevos.")
             
             # Creamos una sesión de DB para usar en todos los emails de esta tanda
-            async with AsyncSessionLocal() as db_session:
+            async with database.AsyncSessionLocal() as db_session:
                 for msg in unread_emails:
                     try:
                         logger.info(f"Procesando email de {msg.from_} (Asunto: '{msg.subject}')")

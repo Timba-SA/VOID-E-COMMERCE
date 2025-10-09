@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from database import database # <--- ¡IMPORTANTE!
 import sentry_sdk
 from settings import settings
-from database.database import engine, AsyncSessionLocal
 from database.models import Base, Categoria
 from routers import (
     health_router, auth_router, products_router, cart_router,
@@ -19,7 +19,7 @@ from utils.limiter import limiter, RateLimitExceeded, _rate_limit_exceeded_handl
 # --- ACÁ ESTÁ LA MAGIA CORREGIDA ---
 async def seed_initial_data():
     """Función para cargar datos iniciales si no existen."""
-    async with AsyncSessionLocal() as db:
+    async with database.AsyncSessionLocal() as db:
         result = await db.execute(select(Categoria))
         if result.scalars().first() is None:
             print("Base de datos de categorías vacía. Cargando datos iniciales...")
@@ -53,13 +53,14 @@ if settings.SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
+    database.setup_database_engine()  # <--- LLAMADA CRÍTICA
+    async with database.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     await seed_initial_data()
     
     yield
-    await engine.dispose()
+    await database.engine.dispose()
 # --- FIN DE LA MAGIA ---
 
 app = FastAPI(

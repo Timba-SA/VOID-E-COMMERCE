@@ -55,30 +55,27 @@ def get_chatbot_system_prompt() -> str:
     )
 
 def _build_messages_for_groq(system_prompt: str, catalog_context: str, chat_history: List[Any]) -> List[Dict[str, Any]]:
-    """Construye la lista de mensajes para enviar a la API de Groq."""
+    """Construye la lista de mensajes para enviar a la API de Groq de forma más clara y robusta."""
     messages = [{"role": "system", "content": f"{system_prompt}\n\nContexto del Catálogo Actual:\n{catalog_context}"}]
-    
-    for entry in chat_history:
-        user_prompt = None
-        assistant_response = None
-        
-        if hasattr(entry, 'prompt'):
-            # Es un objeto de la DB (como ConversacionIA)
-            user_prompt = entry.prompt
-            assistant_response = entry.respuesta
-        elif isinstance(entry, dict):
-            # Es un diccionario (como el que mandamos desde la tarea de email)
-            if entry.get('role') == 'user':
-                user_prompt = entry.get('content')
-            elif entry.get('role') == 'assistant':
-                assistant_response = entry.get('content')
 
-        if user_prompt:
-            messages.append({"role": "user", "content": user_prompt.strip()})
-        
-        if assistant_response and not str(assistant_response).strip().startswith("ERROR:"):
-            messages.append({"role": "assistant", "content": assistant_response.strip()})
+    for entry in chat_history:
+        if hasattr(entry, 'prompt') and hasattr(entry, 'respuesta'):
+            # Procesa objetos tipo ConversacionIA de la base de datos
+            if entry.prompt:
+                messages.append({"role": "user", "content": entry.prompt.strip()})
+            if entry.respuesta and not str(entry.respuesta).strip().startswith("ERROR:"):
+                messages.append({"role": "assistant", "content": entry.respuesta.strip()})
+        elif isinstance(entry, dict) and 'role' in entry and 'content' in entry:
+            # Procesa entradas de historial en formato de diccionario
+            role = entry['role']
+            content = str(entry['content']).strip()
             
+            if role == 'assistant' and content.startswith("ERROR:"):
+                continue  # Omite las respuestas de error del asistente
+            
+            if role in ['user', 'assistant']:
+                messages.append({"role": role, "content": content})
+    
     return messages
 
 
