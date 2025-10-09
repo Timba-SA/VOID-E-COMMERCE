@@ -4,6 +4,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from groq import Groq, GroqError
 
 from settings import settings
@@ -29,19 +30,74 @@ class IAServiceError(Exception):
 async def get_catalog_from_db(db: AsyncSession) -> str:
     """Obtiene el catálogo de productos formateado desde la base de datos."""
     try:
-        result = await db.execute(select(Producto))
+        # Cargamos también la categoría relacionada para mostrarla y usarla en tags
+        result = await db.execute(select(Producto).options(selectinload(Producto.categoria)))
         products = result.scalars().all()
         if not products:
             return "No hay productos disponibles en este momento."
         
         catalog_lines = ["--- CATÁLOGO DE PRODUCTOS DISPONIBLES ---"]
         for prod in products:
-            catalog_lines.append(f"- ID: {prod.id} | Nombre: {prod.nombre} | Precio: ${prod.precio} | Descripción: {prod.descripcion}")
+            category = prod.categoria.nombre if getattr(prod, 'categoria', None) else 'Sin categoría'
+            color = prod.color or ''
+            talle = prod.talle or ''
+            material = prod.material or ''
+            descripcion = prod.descripcion or ''
+
+            # Construimos tags normalizados para ayudar las búsquedas por color/talle/categoría
+            tags_parts = [str(prod.nombre or ''), category, color, talle, material, descripcion]
+            # Normalizamos a minúsculas y unimos en una sola cadena compacta
+            tags = ' '.join([p.strip().lower() for p in tags_parts if p and p.strip()])
+
+            catalog_lines.append(
+                f"- ID: {prod.id} | Nombre: {prod.nombre} | Categoria: {category} | Color: {color} | Talle: {talle} | Precio: ${prod.precio} | Descripción: {descripcion} | Tags: {tags}"
+            )
         catalog_lines.append("--- FIN DEL CATÁLOGO ---")
         return "\n".join(catalog_lines)
     except Exception as e:
         logger.error(f"Error al obtener el catálogo de la DB: {e}")
         return "Error al obtener el catálogo."
+
+
+async def find_matching_products(db: AsyncSession, query: str, limit: int = 5) -> str:
+    """Busca productos cuyos campos (nombre, categoría, color, talle, material, descripción)
+    coincidan con las palabras de la consulta. Devuelve un bloque formateado con los matches.
+    Esta función hace la comparación en Python sobre los mismos tags normalizados que usa
+    `get_catalog_from_db`, lo cual es suficiente para catálogos pequeños y evita depender de
+    funciones de DB específicas por dialecto.
+    """
+    try:
+        if not query or not query.strip():
+            return ""
+
+        q_tokens = [t.strip().lower() for t in query.split() if t.strip()]
+        if not q_tokens:
+            return ""
+
+        result = await db.execute(select(Producto).options(selectinload(Producto.categoria)))
+        products = result.scalars().all()
+
+        matches = []
+        for prod in products:
+            category = prod.categoria.nombre if getattr(prod, 'categoria', None) else ''
+            color = prod.color or ''
+            talle = prod.talle or ''
+            material = prod.material or ''
+            descripcion = prod.descripcion or ''
+
+            tags_parts = [str(prod.nombre or ''), category, color, talle, material, descripcion]
+            tags = ' '.join([p.strip().lower() for p in tags_parts if p and p.strip()])
+
+            # Si alguno de los tokens de la query aparece en los tags, es match
+            if any(tok in tags for tok in q_tokens):
+                matches.append(f"- ID: {prod.id} | Nombre: {prod.nombre} | Categoria: {category} | Color: {color} | Talle: {talle} | Precio: ${prod.precio}")
+                if len(matches) >= limit:
+                    break
+
+        return "\n".join(matches)
+    except Exception as e:
+        logger.exception(f"Error buscando productos coincidentes: {e}")
+        return ""
 
 def get_chatbot_system_prompt() -> str:
     """Define la personalidad y las instrucciones base del chatbot."""

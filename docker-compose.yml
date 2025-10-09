@@ -38,16 +38,33 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
 
   # 4. Celery Worker (el obrero que hace las tareas pesadas)
-  worker:
+  # Worker para tareas de IA (procesamiento de emails)
+  worker_ia:
     build:
       context: ./server # Usa la misma imagen que el backend
-    container_name: void_worker_dev
+    container_name: void_worker_ia_dev
     env_file:
       - ./.env
-    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO"]
+    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO", "-Q", "ia_emails"]
+    volumes:
+      - ./server:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Worker para tareas transaccionales (envíos críticos)
+  worker_tx:
+    build:
+      context: ./server
+    container_name: void_worker_tx_dev
+    env_file:
+      - ./.env
+    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=INFO", "-Q", "transactional,default"]
     volumes:
       - ./server:/app
     depends_on:
@@ -67,3 +84,6 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
+
+volumes:
+  redis-data:

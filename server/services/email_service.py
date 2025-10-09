@@ -7,7 +7,6 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from settings import settings
-from celery_worker import celery_app
 
 # --- Configuración de logging ---
 logging.basicConfig(level=logging.INFO)

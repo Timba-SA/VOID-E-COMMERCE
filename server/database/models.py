@@ -92,6 +92,21 @@ class ConversacionIA(Base):
     respuesta = Column(Text, nullable=False)
     creado_en = Column(TIMESTAMP, server_default=func.now())
 
+
+# Modelo para almacenar emails entrantes y su estado de procesamiento por la IA
+class EmailTask(Base):
+    __tablename__ = "email_tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    sender_email = Column(String(255), nullable=False, index=True)
+    subject = Column(String(512), nullable=True)
+    body = Column(Text, nullable=True)
+    uid = Column(String(255), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default='pending')  # pending, processing, done, failed
+    attempts = Column(Integer, nullable=False, default=0)
+    response = Column(Text, nullable=True)
+    creado_en = Column(TIMESTAMP, server_default=func.now())
+    procesado_en = Column(TIMESTAMP, nullable=True)
+
 # ===================================================================
 # ¡ACÁ ESTÁ LO NUEVO QUE AGREGAMOS!
 # ===================================================================

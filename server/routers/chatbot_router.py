@@ -56,8 +56,12 @@ async def handle_chat_query(query: chatbot_schemas.ChatQuery, db: AsyncSession =
         # Limitamos el historial para no exceder el límite de tokens
         limited_history = full_db_history[-(CONTEXT_TURNS_LIMIT * 2):]
 
-        # Obtenemos el catálogo y el prompt del sistema desde el servicio
+        # Obtenemos el catálogo y además buscamos productos que coincidan con la query
         catalog_context = await ia_service.get_catalog_from_db(db)
+        # Buscamos matches relevantes (nombre/categoría/color/talle) para priorizarlos en el contexto
+        matched = await ia_service.find_matching_products(db, query.pregunta)
+        if matched:
+            catalog_context = f"{catalog_context}\n\n--- MATCHES RELEVANTES PARA LA CONSULTA ---\n{matched}\n--- FIN MATCHES ---"
         system_prompt = ia_service.get_chatbot_system_prompt()
 
         # Llamamos al servicio de IA (que ahora usa Groq por dentro)
