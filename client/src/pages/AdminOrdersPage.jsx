@@ -20,7 +20,7 @@ const AdminOrdersPage = () => {
         const data = await getOrdersAPI();
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
-        const errorMessage = err.detail || 'No se pudieron cargar las órdenes.';
+        const errorMessage = err.detail || t('admin_orders_load_error');
         setError(errorMessage);
         setOrders([]);
         notify(errorMessage, 'error');

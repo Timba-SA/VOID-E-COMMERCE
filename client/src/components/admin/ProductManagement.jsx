@@ -1,10 +1,12 @@
 // En FRONTEND/src/components/admin/ProductManagement.jsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // Importamos las funciones de la API centralizadas
 import { getProducts, createProduct, deleteProduct } from '@/api/productsApi';
 
 const ProductManagement = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [productData, setProductData] = useState({
     nombre: '',

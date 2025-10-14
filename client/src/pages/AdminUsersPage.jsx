@@ -17,7 +17,7 @@ const AdminUsersPage = () => {
       const data = await getUsersAPI();
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.detail || 'No se pudieron cargar los usuarios.');
+      setError(err.detail || t('admin_users_load_error'));
     } finally {
       setLoading(false);
     }

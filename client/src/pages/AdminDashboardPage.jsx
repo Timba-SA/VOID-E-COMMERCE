@@ -29,7 +29,7 @@ const AdminDashboardPage = () => {
         setSalesData(salesResponse);
         setExpensesData(expensesResponse);
       } catch (err) {
-        setError(err.detail || 'No se pudieron cargar los datos del dashboard.');
+        setError(err.detail || t('admin_dashboard_error', 'Could not load dashboard data.'));
       } finally {
         setLoading(false);
       }

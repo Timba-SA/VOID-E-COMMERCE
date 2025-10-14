@@ -69,7 +69,7 @@ const AdminProductFormPage = () => {
                     setVisibleImages(productToEdit.urls_imagenes?.map(url => ({ id: url, url })) || []);
                 }
             } catch (err) {
-                notify(err.message || 'Error cargando los datos', 'error');
+                notify(err.message || t('admin_product_form_data_load_error'), 'error');
             } finally {
                 setLoading(false);
             }
@@ -90,7 +90,7 @@ const AdminProductFormPage = () => {
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (visibleImages.length + files.length > 3) {
-            notify('Un producto no puede tener más de 3 imágenes.', 'error');
+            notify(t('admin_product_form_max_images_error'), 'error');
             e.target.value = null;
             return;
         }
@@ -128,7 +128,7 @@ const AdminProductFormPage = () => {
 
     const handleAddVariant = async () => {
         if (!newVariant.tamanio.trim() || !newVariant.color.trim() || !newVariant.cantidad_en_stock) {
-            notify('Completá todos los campos para añadir la variante.', 'error');
+            notify(t('admin_product_form_variant_complete_fields_error'), 'error');
             return;
         }
         try {
@@ -138,20 +138,20 @@ const AdminProductFormPage = () => {
             });
             setVariants([...variants, createdVariant]);
             setNewVariant({ tamanio: '', color: '', cantidad_en_stock: '' });
-            notify('Variante agregada con éxito.', 'success');
+            notify(t('admin_product_form_variant_added_success'), 'success');
         } catch (err) {
-            notify(err.detail || 'No se pudo crear la variante.', 'error');
+            notify(err.detail || t('admin_product_form_variant_create_error'), 'error');
         }
     };
 
     const handleDeleteVariant = async (variantId) => {
-        if (!window.confirm('¿Seguro que querés borrar esta variante?')) return;
+        if (!window.confirm(t('admin_product_form_variant_delete_confirm'))) return;
         try {
             await deleteVariantAPI(variantId);
             setVariants(variants.filter(v => v.id !== variantId));
-            notify('Variante eliminada.', 'success');
+            notify(t('admin_product_form_variant_deleted_success'), 'success');
         } catch (err) {
-            notify(err.detail || 'No se pudo eliminar la variante.', 'error');
+            notify(err.detail || t('admin_product_form_variant_delete_error'), 'error');
         }
     };
 
@@ -178,19 +178,19 @@ const AdminProductFormPage = () => {
                 newImageFiles.forEach(file => { formData.append('new_images', file); });
 
                 await updateProduct(productId, formData);
-                notify('Producto actualizado con éxito!', 'success');
+                notify(t('admin_product_form_product_updated_success'), 'success');
                 navigate('/admin/products');
             } else {
                 if (newImageFiles.length === 0) {
-                    notify('Debes subir al menos una imagen.', 'error'); setLoading(false); return;
+                    notify(t('admin_product_form_min_one_image_error'), 'error'); setLoading(false); return;
                 }
                 newImageFiles.forEach(file => { formData.append('images', file); });
                 const createdProduct = await createProduct(formData);
-                notify('Producto creado con éxito! Ahora podés añadirle talles y colores.', 'success');
+                notify(t('admin_product_form_product_created_success'), 'success');
                 navigate(`/admin/products/edit/${createdProduct.id}`);
             }
         } catch (err) {
-            notify(err.response?.data?.detail || 'Error al guardar el producto.', 'error');
+            notify(err.response?.data?.detail || t('admin_product_form_save_error'), 'error');
             setLoading(false);
         }
     };

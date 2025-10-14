@@ -26,7 +26,7 @@ const AdminProductsPage = () => {
         const data = await getProducts({ limit: 500 }); 
         setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
-        const errorMessage = err.response?.data?.detail || err.message || 'No se pudieron cargar los productos.';
+        const errorMessage = err.response?.data?.detail || err.message || t('admin_products_load_error');
         setError(errorMessage);
         setProducts([]);
         notify(errorMessage, 'error');
@@ -43,8 +43,8 @@ const AdminProductsPage = () => {
         const categoriesData = await getCategories();
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       } catch (err) {
-        console.error("Error al cargar categorías para el filtro:", err);
-        notify("No se pudieron cargar las categorías.", 'error');
+        console.error(t('admin_categories_filter_error'), err);
+        notify(t('admin_categories_load_error'), 'error');
       }
     };
     fetchCategories();
@@ -65,9 +65,9 @@ const AdminProductsPage = () => {
     try {
       await deleteProduct(productId);
       setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
-      notify('Producto eliminado con éxito.', 'success');
+      notify(t('admin_products_delete_success'), 'success');
     } catch (err) {
-      notify(`Error: ${err.detail || 'No se pudo eliminar el producto.'}` , 'error');
+      notify(`Error: ${err.detail || t('admin_products_delete_error')}` , 'error');
     }
   };
 
@@ -83,7 +83,7 @@ const AdminProductsPage = () => {
             value={categoryFilter}
             style={{ padding: '0.5rem', fontSize: '0.9rem' }}
           >
-            <option value="">Todas las Categorías</option>
+            <option value="">{t('admin_products_all_categories')}</option>
             {categories.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.nombre}</option>
             ))}

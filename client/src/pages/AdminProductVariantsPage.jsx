@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getProductById } from '../api/productsApi'; // Usamos la pública para traer el producto
 import { addVariantAPI, deleteVariantAPI } from '../api/adminApi';
 import { NotificationContext } from '../context/NotificationContext';
 import Spinner from '../components/common/Spinner';
 
 const AdminProductVariantsPage = () => {
+  const { t } = useTranslation();
   const { productId } = useParams();
   const { notify } = useContext(NotificationContext);
 
@@ -27,7 +29,7 @@ const AdminProductVariantsPage = () => {
         setProduct(data);
         setVariants(data.variantes || []);
       } catch (err) {
-        setError(err.detail || 'No se pudo cargar el producto y sus variantes.');
+        setError(err.detail || t('admin_variants_load_error'));
       } finally {
         setLoading(false);
       }
@@ -49,45 +51,45 @@ const AdminProductVariantsPage = () => {
       const createdVariant = await addVariantAPI(productId, newVariant);
       setVariants([...variants, createdVariant]);
       setNewVariant({ tamanio: '', color: '', cantidad_en_stock: 0 });
-      notify('Variante agregada con éxito.', 'success');
+      notify(t('admin_variants_added_success'), 'success');
     } catch (err) {
-      notify(`Error: ${err.detail || 'No se pudo crear la variante.'}`, 'error');
+      notify(`${t('common_error')}: ${err.detail || t('admin_variants_create_error')}`, 'error');
     }
   };
 
   const handleDeleteVariant = async (variantId) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta variante?')) {
+    if (!window.confirm(t('admin_variants_delete_confirm'))) {
       return;
     }
     try {
       await deleteVariantAPI(variantId);
       setVariants(variants.filter(v => v.id !== variantId));
-      notify('Variante eliminada.', 'success');
+      notify(t('admin_variants_deleted_success'), 'success');
     } catch (err) {
-      notify(`Error: ${err.detail || 'No se pudo eliminar la variante.'}`, 'error');
+      notify(`${t('common_error')}: ${err.detail || t('admin_variants_delete_error')}`, 'error');
     }
   };
 
-  if (loading) return <Spinner message="Cargando variantes..." />;
+  if (loading) return <Spinner message={t('admin_variants_loading')} />;
 
   return (
     <div>
-      <Link to="/admin/products" className="back-link">&larr; Volver a Productos</Link>
+      <Link to="/admin/products" className="back-link">&larr; {t('admin_variants_back_to_products')}</Link>
       <div className="admin-header" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
-        <h1>Gestionar Variantes de "{product?.nombre}"</h1>
+        <h1>{t('admin_variants_manage_title', { productName: product?.nombre })}</h1>
       </div>
 
       {error && <h2 className="error-message">{error}</h2>}
 
-      <h3>Variantes Actuales</h3>
+      <h3>{t('admin_variants_current_variants')}</h3>
       <table className="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Talle</th>
-            <th>Color</th>
-            <th>Stock</th>
-            <th>Acciones</th>
+            <th>{t('admin_variants_table_id')}</th>
+            <th>{t('admin_variants_table_size')}</th>
+            <th>{t('admin_variants_table_color')}</th>
+            <th>{t('admin_variants_table_stock')}</th>
+            <th>{t('admin_variants_table_actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -102,7 +104,7 @@ const AdminProductVariantsPage = () => {
                   className="action-btn delete"
                   onClick={() => handleDeleteVariant(variant.id)}
                 >
-                  Eliminar
+                  {t('admin_variants_table_delete_button')}
                 </button>
               </td>
             </tr>
@@ -111,22 +113,22 @@ const AdminProductVariantsPage = () => {
       </table>
 
       <form onSubmit={handleAddVariant} className="admin-form" style={{marginTop: '3rem'}}>
-        <h3 style={{borderTop: '1px solid #eee', paddingTop: '2rem'}}>Añadir Nueva Variante</h3>
+        <h3 style={{borderTop: '1px solid #eee', paddingTop: '2rem'}}>{t('admin_variants_add_new_title')}</h3>
         <div className="form-grid">
             <div className="form-group">
-                <label htmlFor="tamanio">Talle</label>
+                <label htmlFor="tamanio">{t('admin_variants_form_size')}</label>
                 <input type="text" id="tamanio" name="tamanio" value={newVariant.tamanio} onChange={handleNewVariantChange} required />
             </div>
             <div className="form-group">
-                <label htmlFor="color">Color</label>
+                <label htmlFor="color">{t('admin_variants_form_color')}</label>
                 <input type="text" id="color" name="color" value={newVariant.color} onChange={handleNewVariantChange} required />
             </div>
             <div className="form-group">
-                <label htmlFor="cantidad_en_stock">Stock</label>
+                <label htmlFor="cantidad_en_stock">{t('admin_variants_form_stock')}</label>
                 <input type="number" id="cantidad_en_stock" name="cantidad_en_stock" value={newVariant.cantidad_en_stock} onChange={handleNewVariantChange} required min="0" />
             </div>
         </div>
-        <button type="submit" className="submit-btn">Añadir Variante</button>
+        <button type="submit" className="submit-btn">{t('admin_variants_add_button')}</button>
       </form>
     </div>
   );

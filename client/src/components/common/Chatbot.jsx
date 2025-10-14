@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { postQueryAPI, getRecommendationsAPI, smartSearchAPI } from '../../api/chatbotApi';
+import { useTranslation } from 'react-i18next';
+import { postQueryAPI, smartSearchAPI } from '../../api/chatbotApi';
 
 const Chatbot = () => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState('');
-    const [recommendations, setRecommendations] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const messagesEndRef = useRef(null);
 
     // Sugerencias rápidas dinámicas
     const quickSuggestions = [
-        "¿Qué remeras tienen?",
-        "Camperas en stock",
-        "Talles disponibles",
-        "Productos en oferta",
-        "Colores disponibles"
+        t('chatbot_suggestion_1'),
+        t('chatbot_suggestion_2'),
+        t('chatbot_suggestion_3'),
+        t('chatbot_suggestion_4'),
+        t('chatbot_suggestion_5')
     ];
 
     useEffect(() => {
@@ -28,29 +29,15 @@ const Chatbot = () => {
             localStorage.setItem('chatSessionId', currentSessionId);
         }
         setSessionId(currentSessionId);
-        
-        // Cargar recomendaciones cuando se inicializa
-        if (currentSessionId) {
-            loadRecommendations(currentSessionId);
-        }
     }, []);
     
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const loadRecommendations = async (sessionId) => {
-        try {
-            const recs = await getRecommendationsAPI(sessionId, 3);
-            setRecommendations(recs);
-        } catch (error) {
-            console.error('Error cargando recomendaciones:', error);
-        }
-    };
-
     const toggleChat = () => {
         if (!isOpen && messages.length === 0) {
-            const welcomeMessage = '¡Hola! Soy Kara, tu asistente personal de VOID 👋\n\n¿Qué tipo de ropa estás buscando hoy?';
+            const welcomeMessage = t('chatbot_welcome');
             setMessages([{ sender: 'bot', text: welcomeMessage }]);
             setShowSuggestions(true);
         }
@@ -99,9 +86,6 @@ const Chatbot = () => {
 
             setMessages(prev => [...prev, { sender: 'bot', text: botMessage }]);
 
-            // Recargar recomendaciones después de cada conversación
-            loadRecommendations(sessionId);
-
         } catch (error) {
             console.error("Error en la llamada del chatbot:", error);
             setMessages(prev => [...prev, { 
@@ -141,12 +125,12 @@ const Chatbot = () => {
             <div className={`chatbot-window ${isOpen ? 'open' : ''}`}>
                 <div className="chatbot-header">
                     <div className="header-content">
-                        <h3>KARA • VOID ASSISTANT</h3>
-                        <span className="status-indicator">🟢 Online</span>
+                        <h3>{t('chatbot_title')}</h3>
+                        <span className="header-subtitle">{t('chatbot_subtitle')}</span>
                     </div>
                     <button onClick={toggleChat} className="chatbot-close-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                     </button>
                 </div>
@@ -160,7 +144,7 @@ const Chatbot = () => {
 
                     {showSuggestions && (
                         <div className="suggestions-container">
-                            <p className="suggestions-title">Sugerencias rápidas:</p>
+                            <p className="suggestions-title">{t('chatbot_suggestions_title')}</p>
                             <div className="suggestions-grid">
                                 {quickSuggestions.map((suggestion, index) => (
                                     <button
@@ -171,20 +155,6 @@ const Chatbot = () => {
                                     >
                                         {suggestion}
                                     </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {recommendations.length > 0 && messages.length <= 1 && (
-                        <div className="recommendations-container">
-                            <p className="recommendations-title">💡 Productos recomendados para vos:</p>
-                            <div className="recommendations-list">
-                                {recommendations.slice(0, 3).map((product, index) => (
-                                    <div key={index} className="recommendation-item">
-                                        <span className="product-name">{product.nombre}</span>
-                                        <span className="product-price">${product.precio}</span>
-                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -203,7 +173,7 @@ const Chatbot = () => {
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Escribí tu consulta..."
+                        placeholder={t('chatbot_placeholder')}
                         disabled={isLoading}
                         className="chatbot-input"
                     />

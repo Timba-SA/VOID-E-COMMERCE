@@ -23,7 +23,7 @@ const AdminLayout = () => {
           id="admin-menu-toggle" 
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isMobileMenuOpen ? 'Cerrar' : 'Menú'}
+          {isMobileMenuOpen ? t('admin_nav_close') : t('admin_nav_menu')}
         </button>
 
         <nav className={isMobileMenuOpen ? 'open' : ''}>
