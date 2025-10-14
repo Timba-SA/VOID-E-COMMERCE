@@ -90,7 +90,7 @@ async def check_and_process_emails():
                         )
                         await db_session.commit()
 
-                        # --- Lógica de IA (usar mismo flujo que el chatbot) ---
+                        # --- Lógica de IA mejorada (usar mismo flujo que el chatbot mejorado) ---
                         # Recuperamos historial de la conversación por sesion_id (usamos el email del
                         # remitente como sesion_id) y limitamos los turns igual que en el router.
                         CONTEXT_TURNS_LIMIT = 5
@@ -100,25 +100,76 @@ async def check_and_process_emails():
                         full_db_history = result.scalars().all()
                         limited_history = full_db_history[-(CONTEXT_TURNS_LIMIT * 2):]
 
-                        catalog = await ia_services.get_catalog_from_db(db_session)
-                        # Buscamos productos que coincidan con la consulta del correo (nombre/categoría/color/talle)
-                        matched = await ia_services.find_matching_products(db_session, body)
-                        if matched:
-                            catalog = f"{catalog}\n\n--- MATCHES RELEVANTES PARA LA CONSULTA ---\n{matched}\n--- FIN MATCHES ---"
-                        system_prompt = ia_services.get_chatbot_system_prompt()
+                        # Análisis avanzado de la consulta del email
+                        intention_analysis = await ia_services.analyze_user_intention(body)
+                        logger.info(f"Intención detectada en email: {intention_analysis['primary_intention']}")
+
+                        # Obtener catálogo optimizado para la consulta específica del email
+                        catalog = await ia_services.get_enhanced_catalog_from_db(db_session, body)
+                        
+                        # Si es una búsqueda de productos, usar búsqueda inteligente
+                        if intention_analysis["primary_intention"] == "product_search":
+                            search_result = await ia_services.smart_product_search(db_session, body, limit=4)
+                            if search_result["products"]:
+                                matched_lines = ["\n--- PRODUCTOS ESPECÍFICOS PARA TU CONSULTA ---"]
+                                for prod in search_result["products"]:
+                                    stock_info = "Sin stock"
+                                    if hasattr(prod, 'variantes') and prod.variantes:
+                                        total_stock = sum(v.cantidad_en_stock for v in prod.variantes)
+                                        if total_stock > 0:
+                                            available_sizes = [v.tamanio for v in prod.variantes if v.cantidad_en_stock > 0]
+                                            stock_info = f"Stock: {total_stock}"
+                                            if available_sizes:
+                                                stock_info += f" | Talles: {', '.join(set(available_sizes))}"
+                                    
+                                    category = prod.categoria.nombre if getattr(prod, 'categoria', None) else 'Sin categoría'
+                                    matched_lines.append(
+                                        f"🎯 ID: {prod.id} | {prod.nombre} | Categoría: {category} | "
+                                        f"Color: {prod.color or 'N/A'} | ${prod.precio} | {stock_info}"
+                                    )
+                                matched_lines.append("--- FIN PRODUCTOS ESPECÍFICOS ---")
+                                catalog = "\n".join(matched_lines) + "\n" + catalog
+
+                        # Generar recomendaciones personalizadas para emails
+                        recommendations = await ia_services.get_personalized_recommendations(db_session, sender, limit=3)
+                        if recommendations:
+                            rec_lines = ["\n--- PRODUCTOS RECOMENDADOS PARA VOS ---"]
+                            for rec in recommendations:
+                                stock_info = "Sin stock"
+                                if hasattr(rec, 'variantes') and rec.variantes:
+                                    total_stock = sum(v.cantidad_en_stock for v in rec.variantes)
+                                    if total_stock > 0:
+                                        available_sizes = [v.tamanio for v in rec.variantes if v.cantidad_en_stock > 0]
+                                        stock_info = f"Stock: {total_stock}"
+                                        if available_sizes:
+                                            stock_info += f" | Talles: {', '.join(set(available_sizes))}"
+                                
+                                rec_lines.append(
+                                    f"⭐ ID: {rec.id} | {rec.nombre} | ${rec.precio} | {stock_info}"
+                                )
+                            rec_lines.append("--- FIN RECOMENDACIONES ---")
+                            catalog += "\n".join(rec_lines)
+
+                        # Generar prompt personalizado para emails
+                        user_preferences = ia_services.analyze_user_preferences(limited_history)
+                        system_prompt = ia_services.get_enhanced_system_prompt(user_preferences, intention_analysis)
 
                         try:
-                            # Pasamos el historial limitado y el body como user_prompt para que la IA
-                            # construya la respuesta en contexto igual que el chatbot.
+                            # Usar IA mejorada con contexto completo
                             ai_response = await ia_services.get_ia_response(
                                 system_prompt=system_prompt,
                                 catalog_context=catalog,
                                 chat_history=limited_history,
-                                user_prompt=body
+                                user_prompt=f"Email recibido: {body}"
                             )
                         except IAServiceError as e:
                             logger.error(f"La IA devolvió un error para el EmailTask id={email_task.id}: {e}")
-                            ai_response = "Gracias por tu mensaje. En este momento no puedo procesarlo automáticamente; te responderemos pronto."
+                            ai_response = (
+                                "¡Hola! Gracias por tu mensaje. Soy Kara de VOID Indumentaria. "
+                                "En este momento no puedo procesar tu consulta automáticamente, "
+                                "pero nuestro equipo te va a responder pronto con toda la info que necesites. "
+                                "¡Saludos!"
+                            )
 
                         # --- Envío de respuesta ---
                         await email_service.send_plain_email(sender, f"Re: {msg.subject or ''}", ai_response)
@@ -187,7 +238,7 @@ def reprocess_email_task(email_task_id: int):
                     logger.error(f"EmailTask id={email_task_id} no encontrado")
                     return
 
-                # Reproceso reutilizando el historial. Igual que en el worker principal.
+                # Reproceso reutilizando el historial con IA mejorada
                 CONTEXT_TURNS_LIMIT = 5
                 res_hist = await db_session.execute(
                     select(ConversacionIA).where(ConversacionIA.sesion_id == et.sender_email).order_by(ConversacionIA.creado_en)
@@ -195,13 +246,29 @@ def reprocess_email_task(email_task_id: int):
                 full_db_history = res_hist.scalars().all()
                 limited_history = full_db_history[-(CONTEXT_TURNS_LIMIT * 2):]
 
-                catalog = await ia_services.get_catalog_from_db(db_session)
-                system_prompt = ia_services.get_chatbot_system_prompt()
+                # Análisis de intención para reprocess
+                intention_analysis = await ia_services.analyze_user_intention(et.body)
+                
+                # Catálogo optimizado
+                catalog = await ia_services.get_enhanced_catalog_from_db(db_session, et.body)
+                
+                # Prompt personalizado para reprocess
+                user_preferences = ia_services.analyze_user_preferences(limited_history)
+                system_prompt = ia_services.get_enhanced_system_prompt(user_preferences, intention_analysis)
 
                 try:
-                    ai_response = await ia_services.get_ia_response(system_prompt=system_prompt, catalog_context=catalog, chat_history=limited_history, user_prompt=et.body)
+                    ai_response = await ia_services.get_ia_response(
+                        system_prompt=system_prompt, 
+                        catalog_context=catalog, 
+                        chat_history=limited_history, 
+                        user_prompt=f"Email recibido: {et.body}"
+                    )
                 except IAServiceError:
-                    ai_response = "Gracias por tu mensaje. En este momento no puedo procesarlo automáticamente; te responderemos pronto."
+                    ai_response = (
+                        "¡Hola! Gracias por escribirnos. Soy Kara de VOID Indumentaria. "
+                        "Tu consulta es importante para nosotros y nuestro equipo te va a responder "
+                        "con toda la información que necesités. ¡Saludos!"
+                    )
 
                 await email_service.send_plain_email(et.sender_email, f"Re: {et.subject or ''}", ai_response)
                 await db_session.execute(update(EmailTask).where(EmailTask.id == et.id).values(status='done', response=ai_response, procesado_en=datetime.utcnow()))
