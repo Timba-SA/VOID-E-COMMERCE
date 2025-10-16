@@ -77,7 +77,34 @@ const CheckoutPage = () => {
                 // Ahora le pasamos el `shippingCost` a la función de la API
                 const preference = await createCheckoutPreference(cart, formData, shippingCost);
                 if (preference.init_point) {
-                    window.location.href = preference.init_point;
+                    // Abrir Mercado Pago en una nueva ventana/pestaña
+                    const width = 800;
+                    const height = 700;
+                    const left = (window.innerWidth - width) / 2;
+                    const top = (window.innerHeight - height) / 2;
+                    
+                    const mercadoPagoWindow = window.open(
+                        preference.init_point,
+                        'MercadoPago',
+                        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                    );
+                    
+                    if (!mercadoPagoWindow) {
+                        // Si el navegador bloqueó la ventana emergente, usar el método tradicional
+                        notify(t('checkout_popup_blocked'), 'warning');
+                        window.open(preference.init_point, '_blank');
+                    } else {
+                        notify(t('checkout_redirecting_to_payment'), 'success');
+                        
+                        // Opcional: Detectar cuando se cierra la ventana de pago
+                        const checkWindowClosed = setInterval(() => {
+                            if (mercadoPagoWindow.closed) {
+                                clearInterval(checkWindowClosed);
+                                console.log('Ventana de Mercado Pago cerrada');
+                                // Aquí podrías verificar el estado del pago
+                            }
+                        }, 1000);
+                    }
                 } else {
                     throw new Error('Could not retrieve payment starting point.');
                 }

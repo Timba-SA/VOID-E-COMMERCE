@@ -206,6 +206,8 @@
   "checkout_error_fields": "Please complete all required shipping address fields.",
   "checkout_error_empty_cart": "Your cart is empty.",
   "checkout_error_payment": "Could not initiate the payment process.",
+  "checkout_popup_blocked": "Please allow pop-ups to complete the payment.",
+  "checkout_redirecting_to_payment": "Opening payment window...",
   "checkout_info_address_loaded": "Previous address loaded.",
   "checkout_loading": "Loading checkout...",
   "modal_item_added_title": "ITEM ADDED TO BAG",

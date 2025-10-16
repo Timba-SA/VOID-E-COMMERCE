@@ -52,13 +52,17 @@ async def test_webhook_success_creates_order_and_updates_stock(
     # --- ASSERT ---
     assert response.status_code == 200
     
+    # Refrescar la sesión para obtener los datos actualizados después del commit
+    await db_sql.expire_all()
+    
     order_result = await db_sql.execute(select(Orden).where(Orden.payment_id_mercadopago == payment_id))
     created_order = order_result.scalars().first()
     assert created_order is not None
     assert created_order.monto_total == transaction_amount
 
-    variant_result = await db_sql.get(VarianteProducto, product_with_variant_in_stock.id)
-    assert variant_result.cantidad_en_stock == initial_stock - quantity_bought
+    # Recargar el variant desde la base de datos
+    await db_sql.refresh(product_with_variant_in_stock)
+    assert product_with_variant_in_stock.cantidad_en_stock == initial_stock - quantity_bought
 
 
 @pytest.mark.asyncio
@@ -98,8 +102,12 @@ async def test_webhook_fails_and_rolls_back_on_insufficient_stock(
     # --- ASSERT (sin cambios) ---
     assert response.status_code == 500
     
+    # Refrescar la sesión
+    await db_sql.expire_all()
+    
     order_result = await db_sql.execute(select(Orden).where(Orden.payment_id_mercadopago == payment_id))
     assert order_result.scalars().first() is None
 
-    variant_result = await db_sql.get(VarianteProducto, product_with_variant_in_stock.id)
-    assert variant_result.cantidad_en_stock == initial_stock
+    # Recargar el variant desde la base de datos
+    await db_sql.refresh(product_with_variant_in_stock)
+    assert product_with_variant_in_stock.cantidad_en_stock == initial_stock

@@ -33,54 +33,53 @@ async def save_order_and_update_stock(
     Función transaccional para guardar la orden y actualizar el stock.
     O todo se ejecuta con éxito (COMMIT), o nada se guarda (ROLLBACK).
     """
-    async with db.begin_nested():
-        try:
-            new_order = Orden(
-                usuario_id=usuario_id, 
-                monto_total=monto_total, 
-                estado="Completado",
-                estado_pago="Aprobado", 
-                metodo_pago=metodo_pago,
-                payment_id_mercadopago=payment_id,
-                direccion_envio=shipping_address
+    try:
+        new_order = Orden(
+            usuario_id=usuario_id, 
+            monto_total=monto_total, 
+            estado="Completado",
+            estado_pago="Aprobado", 
+            metodo_pago=metodo_pago,
+            payment_id_mercadopago=payment_id,
+            direccion_envio=shipping_address
+        )
+        db.add(new_order)
+        await db.flush()
+
+        for item in items_comprados:
+            # Nos aseguramos de que el item de envío (si existe) no se procese aquí.
+            # Mercado Pago devuelve solo los items que son productos.
+            variante_id_str = item.get("id") or item.get("variante_id")
+            if not variante_id_str or not variante_id_str.isdigit() or int(variante_id_str) <= 0:
+                continue
+
+            variante_id = int(variante_id_str)
+            cantidad_comprada = int(item.get("quantity"))
+            precio_unitario = float(item.get("unit_price") or item.get("price"))
+
+            db.add(DetalleOrden(
+                orden_id=new_order.id, 
+                variante_producto_id=variante_id,
+                cantidad=cantidad_comprada, 
+                precio_en_momento_compra=precio_unitario
+            ))
+
+            result = await db.execute(
+                select(VarianteProducto).where(VarianteProducto.id == variante_id).with_for_update()
             )
-            db.add(new_order)
-            await db.flush()
-
-            for item in items_comprados:
-                # Nos aseguramos de que el item de envío (si existe) no se procese aquí.
-                # Mercado Pago devuelve solo los items que son productos.
-                variante_id_str = item.get("id") or item.get("variante_id")
-                if not variante_id_str or not variante_id_str.isdigit() or int(variante_id_str) <= 0:
-                    continue
-
-                variante_id = int(variante_id_str)
-                cantidad_comprada = int(item.get("quantity"))
-                precio_unitario = float(item.get("unit_price") or item.get("price"))
-
-                db.add(DetalleOrden(
-                    orden_id=new_order.id, 
-                    variante_producto_id=variante_id,
-                    cantidad=cantidad_comprada, 
-                    precio_en_momento_compra=precio_unitario
-                ))
-
-                result = await db.execute(
-                    select(VarianteProducto).where(VarianteProducto.id == variante_id).with_for_update()
-                )
-                variante_producto = result.scalars().first()
-                
-                if not variante_producto or variante_producto.cantidad_en_stock < cantidad_comprada:
-                    raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
-                
-                variante_producto.cantidad_en_stock -= cantidad_comprada
+            variante_producto = result.scalars().first()
             
-            logger.info(f"Orden {new_order.id} pre-procesada y stock actualizado. A la espera del COMMIT.")
-            return new_order.id
+            if not variante_producto or variante_producto.cantidad_en_stock < cantidad_comprada:
+                raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
+            
+            variante_producto.cantidad_en_stock -= cantidad_comprada
+        
+        logger.info(f"Orden {new_order.id} creada y stock actualizado correctamente.")
+        return new_order.id
 
-        except Exception as e:
-            logger.error(f"Error CRÍTICO durante la transacción de la orden: {e}. Se activará ROLLBACK.")
-            raise HTTPException(status_code=500, detail=f"Error al procesar la orden: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error CRÍTICO durante la transacción de la orden: {e}. Se activará ROLLBACK.")
+        raise HTTPException(status_code=500, detail=f"Error al procesar la orden: {str(e)}")
 
 
 @router.post("/create-preference", summary="Crea preferencia de pago en Mercado Pago")
@@ -143,23 +142,46 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
         raise HTTPException(status_code=500, detail=f"Error al conectar con Mercado Pago: {e}")
 
 
+@router.get("/webhook-test", summary="Endpoint de prueba para verificar que el webhook esté accesible")
+async def webhook_test():
+    """
+    Endpoint de prueba para verificar que el webhook de Mercado Pago puede alcanzar el servidor.
+    Accede a: https://tu-ngrok-url.ngrok-free.dev/api/checkout/webhook-test
+    """
+    logger.info("🧪 Endpoint de prueba del webhook accedido correctamente")
+    return {
+        "status": "ok",
+        "message": "✅ El webhook está accesible desde internet",
+        "backend_url": BACKEND_URL,
+        "webhook_url": f"{BACKEND_URL}/api/checkout/webhook",
+        "instructions": "Configura esta URL en Mercado Pago: " + f"{BACKEND_URL}/api/checkout/webhook"
+    }
+
+
 @router.post("/webhook", summary="Receptor de notificaciones de Mercado Pago")
 async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     data = await request.json()
+    logger.info(f"🔔 Webhook recibido de Mercado Pago: {data}")
+    
     if data.get("type") == "payment":
         payment_id = data.get("data", {}).get("id")
+        logger.info(f"💳 Procesando pago con ID: {payment_id}")
+        
         if not payment_id: 
+            logger.warning("⚠️ Webhook sin payment_id, ignorando")
             return {"status": "ok"}
 
         existing_order = await db.execute(select(Orden).filter(Orden.payment_id_mercadopago == str(payment_id)))
         if existing_order.scalars().first():
-            logger.warning(f"Intento de procesar pago ya existente: {payment_id}")
+            logger.warning(f"⚠️ Intento de procesar pago ya existente: {payment_id}")
             return {"status": "ok", "reason": "Pago ya procesado"}
 
         payment_info_response = sdk.payment().get(payment_id)
         payment_info = payment_info_response["response"]
+        logger.info(f"📋 Información del pago obtenida de MP. Estado: {payment_info.get('status')}")
 
         if payment_info.get("status") == "approved":
+            logger.info(f"✅ Pago aprobado, creando orden...")
             payer_info = payment_info.get("payer", {})
             address_info = payer_info.get("address", {})
             shipping_address_to_save = {
@@ -169,6 +191,7 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
             }
 
             try:
+                logger.info(f"💾 Guardando orden en la base de datos...")
                 await save_order_and_update_stock(
                     db=db, 
                     usuario_id=payment_info.get("external_reference"),
@@ -179,14 +202,22 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     shipping_address=shipping_address_to_save
                 )
                 # CRÍTICO: Hacer commit de la transacción para persistir la orden en la DB
+                logger.info(f"🔄 Haciendo commit de la transacción...")
                 await db.commit()
-                logger.info(f"Orden guardada exitosamente para el pago {payment_id}")
+                logger.info(f"✅ Orden guardada exitosamente para el pago {payment_id}")
                 
+                logger.info(f"📧 Enviando email de confirmación...")
                 enviar_email_confirmacion_compra_task.delay(payment_info)
             
             except HTTPException as http_exc:
-                logger.error(f"Fallo al procesar el webhook para el pago {payment_id}: {http_exc.detail}")
+                logger.error(f"❌ Fallo al procesar el webhook para el pago {payment_id}: {http_exc.detail}")
                 await db.rollback()
                 raise http_exc
+            except Exception as e:
+                logger.error(f"❌ Error inesperado al procesar el webhook para el pago {payment_id}: {str(e)}")
+                await db.rollback()
+                raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
+        else:
+            logger.info(f"ℹ️ Pago no aprobado. Estado: {payment_info.get('status')}")
 
     return {"status": "ok"}

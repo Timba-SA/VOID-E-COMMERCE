@@ -206,6 +206,8 @@
   "checkout_error_fields": "Por favor, completá todos los campos de la dirección.",
   "checkout_error_empty_cart": "Tu carrito está vacío.",
   "checkout_error_payment": "No se pudo iniciar el proceso de pago.",
+  "checkout_popup_blocked": "Por favor, permitir ventanas emergentes para completar el pago.",
+  "checkout_redirecting_to_payment": "Abriendo ventana de pago...",
   "checkout_info_address_loaded": "Dirección anterior cargada.",
   "checkout_loading": "Cargando checkout...",
   "modal_item_added_title": "ARTÍCULO AÑADIDO A LA BOLSA",
