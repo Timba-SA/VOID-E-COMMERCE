@@ -30,7 +30,9 @@ const AdminProductFormPage = () => {
 
     const [productData, setProductData] = useState({
         nombre: '',
-        descripcion: '',
+        descripcion: '',  // Descripción en español (por compatibilidad)
+        descripcion_es: '',  // Descripción explícita en español
+        descripcion_en: '',  // Descripción en inglés
         precio: '',
         sku: '',
         categoria_id: '',
@@ -60,6 +62,8 @@ const AdminProductFormPage = () => {
                     setProductData({
                         nombre: productToEdit.nombre || '',
                         descripcion: productToEdit.descripcion || '',
+                        descripcion_es: productToEdit.descripcion_i18n?.es || productToEdit.descripcion || '',
+                        descripcion_en: productToEdit.descripcion_i18n?.en || '',
                         precio: productToEdit.precio || '',
                         sku: productToEdit.sku || '',
                         categoria_id: productToEdit.categoria_id || '',
@@ -160,9 +164,24 @@ const AdminProductFormPage = () => {
         setLoading(true);
 
         const formData = new FormData();
+        
+        // Agregamos los campos normales
         Object.keys(productData).forEach(key => {
-            formData.append(key, productData[key]);
+            // No enviamos descripcion_es y descripcion_en directamente
+            if (key !== 'descripcion_es' && key !== 'descripcion_en') {
+                formData.append(key, productData[key]);
+            }
         });
+        
+        // Creamos el objeto descripcion_i18n y lo enviamos como JSON
+        const descripcionI18n = {
+            es: productData.descripcion_es || productData.descripcion || '',
+            en: productData.descripcion_en || ''
+        };
+        formData.append('descripcion_i18n', JSON.stringify(descripcionI18n));
+        
+        // Mantenemos la descripción legacy en español
+        formData.append('descripcion', productData.descripcion_es || productData.descripcion || '');
         
         formData.append('stock', 0);
 
@@ -230,8 +249,12 @@ const AdminProductFormPage = () => {
                             </select>
                         </div>
                         <div className="form-group full-width">
-                            <label htmlFor="descripcion">{t('admin_product_form_description')}</label>
-                            <textarea id="descripcion" name="descripcion" value={productData.descripcion} onChange={handleChange} rows="4"></textarea>
+                            <label htmlFor="descripcion_es">{t('admin_product_form_description')} (Español)</label>
+                            <textarea id="descripcion_es" name="descripcion_es" value={productData.descripcion_es} onChange={handleChange} rows="4"></textarea>
+                        </div>
+                        <div className="form-group full-width">
+                            <label htmlFor="descripcion_en">{t('admin_product_form_description')} (English)</label>
+                            <textarea id="descripcion_en" name="descripcion_en" value={productData.descripcion_en} onChange={handleChange} rows="4"></textarea>
                         </div>
                         <div className="form-group">
                             <label htmlFor="material">{t('admin_product_form_material')}</label>

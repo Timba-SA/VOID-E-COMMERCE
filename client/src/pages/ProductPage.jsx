@@ -35,7 +35,7 @@ const getSafeImageUrls = (urls) => {
 
 
 const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();  // Agregamos i18n para obtener el idioma actual
     const { productId } = useParams();
     const { addItemToCart } = useContext(CartContext);
     const { notify } = useContext(NotificationContext);
@@ -248,7 +248,11 @@ const ProductPage = ({ onOpenCartModal, onSetAddedItem }) => {
                     </div>
 
                     <div className="product-description-full">
-                        <p>{product.descripcion || t('product_no_description')}</p>
+                        <p>{
+                            product.descripcion_i18n 
+                                ? (product.descripcion_i18n[i18n.language] || product.descripcion_i18n['en'] || product.descripcion)
+                                : (product.descripcion || t('product_no_description'))
+                        }</p>
                     </div>
                     
                     <div className="product-actions">

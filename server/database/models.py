@@ -21,7 +21,8 @@ class Producto(Base):
     __tablename__ = "productos"
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
-    descripcion = Column(Text, nullable=True)
+    descripcion = Column(Text, nullable=True)  # Descripción en español (por compatibilidad)
+    descripcion_i18n = Column(JSON, nullable=True)  # {"es": "...", "en": "..."}
     precio = Column(DECIMAL(10, 2), nullable=False)
     sku = Column(String(100), unique=True, nullable=False)
     

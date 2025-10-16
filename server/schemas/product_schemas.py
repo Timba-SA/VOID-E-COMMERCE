@@ -21,7 +21,8 @@ class VarianteProducto(VarianteProductoBase):
 # --- Esquemas para Productos (SQL) ---
 class ProductBase(BaseModel):
     nombre: str
-    descripcion: Optional[str] = None
+    descripcion: Optional[str] = None  # Descripción legacy (español)
+    descripcion_i18n: Optional[dict] = None  # {"es": "...", "en": "..."}
     precio: float = Field(..., gt=0)
     sku: str
     urls_imagenes: Optional[List[str]] = []

@@ -107,6 +107,7 @@ async def get_product_by_id(
 async def create_product(
     nombre: str = Form(...),
     descripcion: Optional[str] = Form(None),
+    descripcion_i18n: Optional[str] = Form(None),
     precio: float = Form(...),
     sku: str = Form(...),
     stock: int = Form(...),
@@ -129,10 +130,19 @@ async def create_product(
     if images and images[0].filename:
         image_urls = await cloudinary_service.upload_images(images)
 
+    # Parseamos el JSON de descripcion_i18n si existe
+    import json
+    descripcion_i18n_dict = None
+    if descripcion_i18n:
+        try:
+            descripcion_i18n_dict = json.loads(descripcion_i18n)
+        except:
+            pass
+
     product_data = product_schemas.ProductCreate(
-        nombre=nombre, descripcion=descripcion, precio=precio, sku=sku,
-        stock=stock, categoria_id=categoria_id, material=material,
-        talle=talle, color=color, urls_imagenes=image_urls
+        nombre=nombre, descripcion=descripcion, descripcion_i18n=descripcion_i18n_dict,
+        precio=precio, sku=sku, stock=stock, categoria_id=categoria_id, 
+        material=material, talle=talle, color=color, urls_imagenes=image_urls
     )
 
     new_product = Producto(**product_data.model_dump())
@@ -160,6 +170,7 @@ async def update_product(
     current_admin: user_schemas.UserOut = Depends(auth_services.get_current_admin_user),
     nombre: Optional[str] = Form(None),
     descripcion: Optional[str] = Form(None),
+    descripcion_i18n: Optional[str] = Form(None),
     precio: Optional[float] = Form(None),
     sku: Optional[str] = Form(None),
     stock: Optional[int] = Form(None),
@@ -180,6 +191,16 @@ async def update_product(
         "stock": stock, "categoria_id": categoria_id, "material": material,
         "talle": talle, "color": color
     }.items() if v is not None}
+    
+    # Procesamos descripcion_i18n si se envía
+    if descripcion_i18n:
+        import json
+        try:
+            descripcion_i18n_dict = json.loads(descripcion_i18n)
+            update_data["descripcion_i18n"] = descripcion_i18n_dict
+        except:
+            pass
+    
     for key, value in update_data.items():
         setattr(product_db, key, value)
 
