@@ -178,10 +178,15 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     metodo_pago="Mercado Pago",
                     shipping_address=shipping_address_to_save
                 )
+                # CRÍTICO: Hacer commit de la transacción para persistir la orden en la DB
+                await db.commit()
+                logger.info(f"Orden guardada exitosamente para el pago {payment_id}")
+                
                 enviar_email_confirmacion_compra_task.delay(payment_info)
             
             except HTTPException as http_exc:
                 logger.error(f"Fallo al procesar el webhook para el pago {payment_id}: {http_exc.detail}")
+                await db.rollback()
                 raise http_exc
 
     return {"status": "ok"}
