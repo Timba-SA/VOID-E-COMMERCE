@@ -47,6 +47,25 @@ class DetalleOrdenOut(BaseModel):
     class Config:
         from_attributes = True
 
+# NUEVO: Esquema para mostrar información de la variante en el detalle de la orden
+class VarianteProductoInfo(BaseModel):
+    tamanio: str
+    color: str
+    producto_nombre: str  # Nombre del producto al que pertenece la variante
+
+    class Config:
+        from_attributes = True
+
+# NUEVO: Esquema detallado para cada item de la orden (con info del producto)
+class DetalleOrdenDetallado(BaseModel):
+    variante_producto_id: int
+    cantidad: int
+    precio_en_momento_compra: float
+    variante_producto: VarianteProductoInfo
+
+    class Config:
+        from_attributes = True
+
 # CORREGIDO: El esquema para mostrar una orden
 class Orden(BaseModel): # Renombrado de OrdenOut para más claridad
     id: int
@@ -58,6 +77,19 @@ class Orden(BaseModel): # Renombrado de OrdenOut para más claridad
     creado_en: datetime
     # Corregido para mostrar los detalles de la orden de forma prolija
     detalles: List[DetalleOrdenOut]
+
+    class Config:
+        from_attributes = True
+
+# NUEVO: Esquema para el detalle completo de una orden (con info de productos)
+class OrdenDetallada(BaseModel):
+    id: int
+    usuario_id: str
+    monto_total: float
+    estado: Optional[str]
+    estado_pago: Optional[str]
+    creado_en: datetime
+    detalles: List[DetalleOrdenDetallado]
 
     class Config:
         from_attributes = True
