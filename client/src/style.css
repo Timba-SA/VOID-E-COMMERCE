@@ -423,11 +423,51 @@ main {
 .widget { background: #fff; padding: 1.5rem; border: 1px solid #e9ecef; border-radius: 4px; }
 .widget h3 { margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 600; color: #6c757d; text-transform: uppercase; }
 .widget-value { font-size: 2.2rem; font-weight: 700; color: #000; }
-.admin-table { width: 100%; border-collapse: collapse; background-color: #fff; border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden; font-size: 0.9rem; }
-.admin-table th, .admin-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
-.admin-table thead { background-color: #f8f9fa; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #495057; }
-.admin-table tbody tr:hover { background-color: #f8f9fa; }
-.admin-table .product-image-cell img { width: 45px; height: 60px; object-fit: contain; background: #fff; border: 1px solid #eee; }
+.admin-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  background-color: #fff; 
+  font-size: 0.9rem; 
+  table-layout: auto;
+}
+
+.admin-table th, 
+.admin-table td { 
+  padding: 1rem; 
+  text-align: left; 
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+.admin-table th {
+  border-bottom: 2px solid #dee2e6;
+}
+
+.admin-table thead th { 
+  background-color: #f8f9fa; 
+  font-size: 0.8rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.05em; 
+  color: #495057;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+}
+
+.admin-table tbody tr:hover { 
+  background-color: #f8f9fa; 
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table .product-image-cell img { 
+  width: 45px; 
+  height: 60px; 
+  object-fit: contain; 
+  background: #fff; 
+  border: 1px solid #eee; 
+}
 
 
 /* =================================================================== */
@@ -1188,19 +1228,37 @@ main {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .action-btn {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
   font-weight: 500;
   text-align: center;
   border-radius: 4px;
   text-decoration: none;
-  border: 1px solid transparent;
+  border: none;
   transition: all 0.2s ease-in-out;
   white-space: nowrap;
+  cursor: pointer;
+  min-width: 85px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.action-btn.view {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.action-btn.view:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
 }
 
 .action-btn.edit {
@@ -1208,9 +1266,10 @@ main {
   color: white;
   border-color: #6b6b6b;
 }
+
 .action-btn.edit:hover {
-  background-color: #696969;
-  border-color: #696969;
+  background-color: #5a5a5a;
+  border-color: #5a5a5a;
 }
 
 .action-btn.variants {
@@ -1218,9 +1277,10 @@ main {
   color: white;
   border-color: #696969;
 }
+
 .action-btn.variants:hover {
-  background-color: #696969;
-  border-color: #696969;
+  background-color: #5a5a5a;
+  border-color: #5a5a5a;
 }
 
 .action-btn.delete {
@@ -1229,6 +1289,7 @@ main {
   border-color: #dc3545;
   cursor: pointer;
 }
+
 .action-btn.delete:hover {
   background-color: #c82333;
   border-color: #bd2130;
@@ -1906,15 +1967,22 @@ body:has(.product-details-container-full) .main-header {
 .table-responsive-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
   margin-top: 1rem;
 }
 
 .admin-table {
-  min-width: 700px;
-  border: none;
+  min-width: 900px;
+  border: 1px solid #dee2e6;
+  border-collapse: collapse;
 }
+
+/* Estilos específicos para tabla de órdenes */
+.admin-table th:nth-child(1) { width: 80px; } /* ORDER ID */
+.admin-table th:nth-child(2) { width: 150px; } /* USER ID */
+.admin-table th:nth-child(3) { width: 120px; } /* TOTAL AMOUNT */
+.admin-table th:nth-child(4) { width: 150px; } /* PAYMENT STATUS */
+.admin-table th:nth-child(5) { width: 130px; } /* DATE */
+.admin-table th:nth-child(6) { width: 150px; } /* ACTIONS */
 
 
 /* --- ESTILOS RESPONSIVE (PARA CELULARES) --- */
@@ -2033,4 +2101,65 @@ body:has(.product-details-container-full) .main-header {
 .cart-items-list .cart-item-row.with-divider:last-child {
   border-bottom: none;
   margin-bottom: 0;
+}
+
+
+/* =================================================================== */
+/* 20. BADGES DE ESTADO PARA ÓRDENES - PANEL DE ADMIN
+/* =================================================================== */
+
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Estado: Aprobado / Pagado */
+.status-badge.status-aprobado,
+.status-badge.status-pagado {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* Estado: Pendiente */
+.status-badge.status-pendiente {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+/* Estado: Rechazado / Cancelado */
+.status-badge.status-rechazado,
+.status-badge.status-cancelado {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Estado: En proceso */
+.status-badge.status-en_proceso,
+.status-badge.status-procesando {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Estilos para el link de back */
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
 }
