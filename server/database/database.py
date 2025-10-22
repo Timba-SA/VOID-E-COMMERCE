@@ -79,3 +79,10 @@ async def check_nosql_connection():
         return {"database": "MongoDB", "status": "ok", "message": "Conexión exitosa."}
     except Exception as e:
         return {"database": "MongoDB", "status": "error", "message": str(e)}
+
+# Función para usar en scripts de migración
+async def get_db_async():
+    """Generador async para usar en scripts de migración."""
+    setup_database_engine()
+    async with AsyncSessionLocal() as session:
+        yield session

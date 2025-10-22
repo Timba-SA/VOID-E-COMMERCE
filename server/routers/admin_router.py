@@ -474,6 +474,7 @@ async def get_categories_admin(db: AsyncSession = Depends(get_db)):
 async def create_category(category_data: product_schemas.CategoriaCreate, db: AsyncSession = Depends(get_db)):
     """
     Crea una nueva categoría de productos.
+    Acepta nombre (para compatibilidad) y nombre_i18n (para traducciones).
     """
     # Verificar si ya existe una categoría con ese nombre
     existing_category = await db.execute(
@@ -485,7 +486,10 @@ async def create_category(category_data: product_schemas.CategoriaCreate, db: As
             detail="Ya existe una categoría con ese nombre"
         )
     
-    new_category = Categoria(nombre=category_data.nombre)
+    new_category = Categoria(
+        nombre=category_data.nombre,
+        nombre_i18n=category_data.nombre_i18n
+    )
     db.add(new_category)
     await db.commit()
     await db.refresh(new_category)
@@ -494,6 +498,52 @@ async def create_category(category_data: product_schemas.CategoriaCreate, db: As
     await cache_service.delete_cache("all_categories")
     
     return new_category
+
+@router.put("/categories/{category_id}", response_model=product_schemas.Categoria)
+async def update_category(
+    category_id: int,
+    category_data: product_schemas.CategoriaUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Actualiza una categoría existente.
+    Permite actualizar nombre y/o nombre_i18n.
+    """
+    result = await db.execute(select(Categoria).where(Categoria.id == category_id))
+    category = result.scalar_one_or_none()
+    
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Categoría no encontrada"
+        )
+    
+    # Actualizar campos si se proporcionan
+    if category_data.nombre is not None:
+        # Verificar que el nuevo nombre no esté en uso por otra categoría
+        existing = await db.execute(
+            select(Categoria).where(
+                Categoria.nombre == category_data.nombre,
+                Categoria.id != category_id
+            )
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ya existe otra categoría con ese nombre"
+            )
+        category.nombre = category_data.nombre
+    
+    if category_data.nombre_i18n is not None:
+        category.nombre_i18n = category_data.nombre_i18n
+    
+    await db.commit()
+    await db.refresh(category)
+    
+    # Invalidar el caché de categorías
+    await cache_service.delete_cache("all_categories")
+    
+    return category
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_200_OK)
 async def delete_category(category_id: int, db: AsyncSession = Depends(get_db)):

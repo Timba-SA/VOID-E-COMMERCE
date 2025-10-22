@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getProducts } from '../api/productsApi';
 import { getCategories } from '../api/categoriesApi';
+import { getCategoryName } from '../utils/categoryHelper';
 import FilterPanel from '@/components/common/FilterPanel.jsx';
 import Spinner from '@/components/common/Spinner.jsx';
 import ProductCard from '@/components/products/ProductCard.jsx';
@@ -21,7 +22,7 @@ const ProductCardSkeleton = () => (
 
 const CatalogPage = () => {
     const { categoryName } = useParams();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -59,6 +60,8 @@ const CatalogPage = () => {
                 }
                 setFilters(prev => ({ ...prev, categoria_id: categoryIds }));
                 setCurrentPage(1);
+                // Limpiar productos para forzar recarga
+                setProducts([]);
             } catch (err) {
                 console.error("Failed to fetch categories", err);
             }
@@ -115,8 +118,25 @@ const CatalogPage = () => {
         if (!categoryName) return t('catalog_all_products');
         if (categoryName.toLowerCase() === 'menswear') return t('catalog_menswear');
         if (categoryName.toLowerCase() === 'womenswear') return t('catalog_womenswear');
+        
+        // Buscar la categoría y obtener su nombre traducido
+        const category = categories.find(c => 
+            c.nombre.toLowerCase() === categoryName.toLowerCase()
+        );
+        
+        if (category) {
+            return getCategoryName(category, i18n.language);
+        }
+        
         return t(categoryName.toLowerCase(), categoryName.replace('-', ' ').toUpperCase());
     };
+    
+    // Efecto para actualizar título cuando cambie el idioma
+    useEffect(() => {
+        // Forzar actualización del título
+        const title = getPageTitle();
+        document.title = `${title} - VOID`;
+    }, [i18n.language, categoryName, categories]);
 
     const pageNumbers = [1, 2, 3, 4, 5]; 
 

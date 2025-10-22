@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getCategories } from '../../api/categoriesApi';
+import { getCategoryName } from '../../utils/categoryHelper';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { CartContext } from '../../context/CartContext';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +13,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
   const navigate = useNavigate();
   const currentSubCategory = location.pathname.split('/')[2] || '';
   
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated, user, isAuthLoading } = useAuthStore();
   const { itemCount } = useContext(CartContext);
 
@@ -33,12 +34,14 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
 
         setCategories({
           womenswear: womenswear.map(c => ({
-            name: t(c.nombre.toLowerCase()),
-            path: `/catalog/${c.nombre.toLowerCase()}`
+            name: getCategoryName(c, i18n.language),
+            path: `/catalog/${c.nombre.toLowerCase()}`,
+            id: c.id
           })),
           menswear: menswear.map(c => ({
-            name: t(c.nombre.toLowerCase()),
-            path: `/catalog/${c.nombre.toLowerCase()}`
+            name: getCategoryName(c, i18n.language),
+            path: `/catalog/${c.nombre.toLowerCase()}`,
+            id: c.id
           }))
         });
 
@@ -50,7 +53,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
     if (isOpen) {
         fetchAndOrganizeCategories();
     }
-  }, [isOpen, t]);
+  }, [isOpen, t, i18n.language]); // Agregar i18n.language para recargar al cambiar idioma
 
   const handleNavigateAndClose = (path) => {
     navigate(path);

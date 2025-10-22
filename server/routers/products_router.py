@@ -2,22 +2,24 @@
 #  IMPORTS ORDENADOS Y CORREGIDOS
 # ==========================================
 from typing import List, Optional
+import json
+import hashlib
 
 # Terceros (FastAPI, SQLAlchemy, etc.)
 from fastapi import (
     APIRouter, Depends, HTTPException, Query, status,
-    File, UploadFile, Form
+    File, UploadFile, Form, Response
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy import select, func, text
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 # Módulos de tu aplicación
 from database.database import get_db
 from database.models import VarianteProducto, Producto
 from schemas import product_schemas, user_schemas
-from services import auth_services, cloudinary_service
+from services import auth_services, cloudinary_service, cache_service
 
 
 router = APIRouter(
@@ -25,8 +27,19 @@ router = APIRouter(
     tags=["Products"]
 )
 
+# Cache helper para generar keys únicas
+def generate_cache_key(prefix: str, **kwargs) -> str:
+    """Genera una key única para cache basada en parámetros."""
+    key_parts = [prefix]
+    for k, v in sorted(kwargs.items()):
+        if v is not None:
+            key_parts.append(f"{k}:{v}")
+    key_string = "|".join(key_parts)
+    return f"products:{hashlib.md5(key_string.encode()).hexdigest()}"
+
 @router.get("/", response_model=List[product_schemas.Product], summary="Obtener una lista filtrada de productos")
 async def get_products(
+    response: Response,
     db: AsyncSession = Depends(get_db),
     q: Optional[str] = Query(None, description="Término de búsqueda para nombre"),
     precio_min: Optional[float] = Query(None, ge=0),
@@ -38,8 +51,24 @@ async def get_products(
     limit: int = Query(12, ge=1, le=500),
     sort_by: Optional[str] = Query(None, description="Opciones: precio_asc, precio_desc, nombre_asc, nombre_desc")
 ):
-    # La consulta base no cambia
-    query = select(Producto).options(joinedload(Producto.variantes))
+    # Generar cache key única para esta consulta
+    cache_key = generate_cache_key(
+        "list",
+        q=q, precio_min=precio_min, precio_max=precio_max,
+        categoria_id=categoria_id, talle=talle, color=color,
+        skip=skip, limit=limit, sort_by=sort_by
+    )
+    
+    # Intentar obtener desde cache (5 minutos de TTL)
+    cached_data = cache_service.get_cache(cache_key)
+    if cached_data:
+        response.headers["X-Cache-Status"] = "HIT"
+        return json.loads(cached_data)
+    
+    response.headers["X-Cache-Status"] = "MISS"
+    
+    # Usar selectinload para cargar variantes de forma más eficiente
+    query = select(Producto).options(selectinload(Producto.variantes))
 
     # Filtros sobre el producto principal (no cambian)
     if q: query = query.filter(Producto.nombre.ilike(f"%{q}%"))
@@ -77,6 +106,13 @@ async def get_products(
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     products = result.scalars().unique().all()
+    
+    # Convertir a dict para cachear
+    products_data = [product_schemas.Product.model_validate(p).model_dump() for p in products]
+    
+    # Guardar en cache (300 segundos = 5 minutos)
+    cache_service.set_cache(cache_key, json.dumps(products_data, default=str), ttl=300)
+    
     return products
 
 # =================================================================
@@ -87,10 +123,21 @@ async def get_products(
 @router.get("/{product_id}", response_model=product_schemas.Product, summary="Obtener un producto por su ID")
 async def get_product_by_id(
     product_id: int,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
+    # Cache individual por producto
+    cache_key = f"products:detail:{product_id}"
+    cached_data = cache_service.get_cache(cache_key)
+    
+    if cached_data:
+        response.headers["X-Cache-Status"] = "HIT"
+        return json.loads(cached_data)
+    
+    response.headers["X-Cache-Status"] = "MISS"
+    
     query = select(Producto).options(
-        joinedload(Producto.variantes)
+        selectinload(Producto.variantes)
     ).where(Producto.id == product_id)
 
     result = await db.execute(query)
@@ -101,6 +148,11 @@ async def get_product_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Producto con ID {product_id} no encontrado"
         )
+    
+    # Cachear por 10 minutos
+    product_data = product_schemas.Product.model_validate(product).model_dump()
+    cache_service.set_cache(cache_key, json.dumps(product_data, default=str), ttl=600)
+    
     return product
 
 @router.post("/", response_model=product_schemas.Product, status_code=status.HTTP_201_CREATED, summary="Crear un nuevo producto (Solo Admins)")
@@ -158,6 +210,9 @@ async def create_product(
         db.add(default_variant)
         await db.commit()
 
+    # Invalidar cache de listados de productos
+    cache_service.delete_pattern("products:*")
+    
     query = select(Producto).options(joinedload(Producto.variantes)).filter(Producto.id == new_product.id)
     result = await db.execute(query)
     created_product = result.scalars().unique().first()
@@ -231,6 +286,10 @@ async def update_product(
     db.add(product_db)
     await db.commit()
     
+    # Invalidar cache de este producto y listados
+    cache_service.delete_cache(f"products:detail:{product_id}")
+    cache_service.delete_pattern("products:*")
+    
     return {"message": "Producto actualizado exitosamente"}
 
 
@@ -245,6 +304,11 @@ async def delete_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     await db.delete(product_db)
     await db.commit()
+    
+    # Invalidar cache
+    cache_service.delete_cache(f"products:detail:{product_id}")
+    cache_service.delete_pattern("products:*")
+    
     return {"message": "Producto eliminado exitosamente"}
 
 

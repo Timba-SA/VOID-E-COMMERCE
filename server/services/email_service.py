@@ -122,7 +122,9 @@ async def send_password_reset_email(receiver_email: str, token: str):
         logger.error("El servicio de email no está configurado para enviar el reseteo de contraseña.")
         return
 
-    reset_link = f"{settings.FRONTEND_URL}/reset-password/{token}"
+    # Normalizar URL del frontend (eliminar barra final si existe)
+    frontend_url = settings.FRONTEND_URL.rstrip('/')
+    reset_link = f"{frontend_url}/reset-password/{token}"
 
     message = MIMEMultipart("alternative")
     message["Subject"] = "Recuperación de Contraseña - VOID"

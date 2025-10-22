@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,11 +66,15 @@ async def lifespan(app: FastAPI):
 # --- FIN DE LA MAGIA ---
 
 app = FastAPI(
-    title="VOID Backend - Finalizado",
-    description="Backend con autenticación, catálogo de productos, carrito de compras, panel de admin y chatbot.",
-    version="0.6.0",
+    title="VOID Backend - Optimizado",
+    description="Backend ultra-rápido con cache agresivo, compresión y queries optimizadas.",
+    version="0.7.0",
     lifespan=lifespan
 )
+
+# Agregar compresión GZIP para respuestas más rápidas
+# Comprime respuestas > 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

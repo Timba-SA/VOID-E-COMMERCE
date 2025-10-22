@@ -44,9 +44,15 @@ class Product(ProductBase):
 
 # --- Esquema para Categorías (SQL) ---
 class CategoriaCreate(BaseModel):
-    nombre: str
+    nombre: str  # Mantener para compatibilidad
+    nombre_i18n: Optional[dict] = None  # {"es": "Remeras", "en": "T-shirts"}
+
+class CategoriaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    nombre_i18n: Optional[dict] = None
 
 class Categoria(BaseModel):
     id: int
     nombre: str
+    nombre_i18n: Optional[dict] = None
     model_config = ConfigDict(from_attributes=True)

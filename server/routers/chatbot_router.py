@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 import logging
+from typing import Optional
 
-from schemas import chatbot_schemas
-from services import ia_services as ia_service # Mantenemos este import igual
+from schemas import chatbot_schemas, user_schemas
+from services import ia_services as ia_service
+from services import auth_services
 from database.database import get_db
-from database.models import ConversacionIA
+from database.models import ConversacionIA, Orden, DetalleOrden, VarianteProducto, Producto
 
 router = APIRouter(prefix="/api/chatbot", tags=["Chatbot"])
 
@@ -15,6 +18,61 @@ logger = logging.getLogger(__name__)
 
 # Límite de turnos de conversación para enviar como contexto a la IA
 CONTEXT_TURNS_LIMIT = 5
+
+async def get_user_purchase_history(db: AsyncSession, user_id: str, limit: int = 5) -> str:
+    """
+    Obtiene el historial de compras del usuario y lo formatea para el contexto de la IA.
+    
+    Args:
+        db: Sesión de base de datos
+        user_id: ID del usuario
+        limit: Número máximo de órdenes a incluir
+    
+    Returns:
+        String formateado con el historial de compras
+    """
+    try:
+        # Buscar las últimas órdenes aprobadas del usuario
+        result = await db.execute(
+            select(Orden)
+            .options(
+                selectinload(Orden.detalles)
+                .selectinload(DetalleOrden.variante_producto)
+                .selectinload(VarianteProducto.producto)
+            )
+            .where(Orden.usuario_id == user_id, Orden.estado_pago == "Aprobado")
+            .order_by(Orden.creado_en.desc())
+            .limit(limit)
+        )
+        orders = result.scalars().unique().all()
+        
+        if not orders:
+            return ""
+        
+        # Formatear el historial
+        history_lines = ["\n--- HISTORIAL DE COMPRAS DEL USUARIO ---"]
+        
+        for order in orders:
+            order_date = order.creado_en.strftime("%d/%m/%Y")
+            history_lines.append(f"\n📦 Orden #{order.id} - Fecha: {order_date} - Total: ${order.monto_total}")
+            
+            for detail in order.detalles:
+                if detail.variante_producto and detail.variante_producto.producto:
+                    product = detail.variante_producto.producto
+                    variant = detail.variante_producto
+                    history_lines.append(
+                        f"   • {product.nombre} "
+                        f"(Talle: {variant.tamanio}, Color: {variant.color}) "
+                        f"- Cantidad: {detail.cantidad} "
+                        f"- Precio: ${detail.precio_en_momento_compra}"
+                    )
+        
+        history_lines.append("--- FIN DEL HISTORIAL DE COMPRAS ---\n")
+        return "\n".join(history_lines)
+        
+    except Exception as e:
+        logger.error(f"Error al obtener historial de compras: {e}")
+        return ""
 
 async def _handle_chat_exception(
     e: Exception,
@@ -33,8 +91,15 @@ async def _handle_chat_exception(
 
 
 @router.post("/query", response_model=chatbot_schemas.ChatResponse)
-async def handle_chat_query(query: chatbot_schemas.ChatQuery, db: AsyncSession = Depends(get_db)):
-    """Maneja una nueva consulta del usuario al chatbot con IA mejorada."""
+async def handle_chat_query(
+    query: chatbot_schemas.ChatQuery, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[user_schemas.UserOut] = Depends(auth_services.get_current_user_optional)
+):
+    """
+    Maneja una nueva consulta del usuario al chatbot con IA mejorada.
+    Si el usuario está autenticado, incluye su historial de compras en el contexto.
+    """
     # Guardamos el prompt del usuario antes de hacer nada más
     nueva_conversacion = ConversacionIA(
         sesion_id=query.sesion_id,
@@ -65,6 +130,13 @@ async def handle_chat_query(query: chatbot_schemas.ChatQuery, db: AsyncSession =
         
         # Obtener catálogo optimizado para la consulta específica
         catalog_context = await ia_service.get_enhanced_catalog_from_db(db, query.pregunta)
+        
+        # 🆕 NUEVO: Si el usuario está autenticado, obtener su historial de compras
+        purchase_history = ""
+        if current_user:
+            purchase_history = await get_user_purchase_history(db, current_user.id, limit=5)
+            if purchase_history:
+                logger.info(f"Incluyendo historial de compras para usuario {current_user.id}")
         
         # Si hay recomendaciones personalizadas, agregarlas al contexto
         if recommendations:
@@ -108,9 +180,17 @@ async def handle_chat_query(query: chatbot_schemas.ChatQuery, db: AsyncSession =
                 matched_lines.append("--- FIN PRODUCTOS RELEVANTES ---")
                 catalog_context = "\n".join(matched_lines) + "\n" + catalog_context
 
+        # 🆕 NUEVO: Agregar el historial de compras al contexto del catálogo
+        if purchase_history:
+            catalog_context = purchase_history + "\n" + catalog_context
+
         # Generar prompt personalizado
         user_preferences = ia_service.analyze_user_preferences(limited_history)
         system_prompt = ia_service.get_enhanced_system_prompt(user_preferences, intention_analysis)
+        
+        # 🆕 NUEVO: Si hay historial de compras, agregar instrucción al sistema
+        if purchase_history:
+            system_prompt += "\n\nIMPORTANTE: El usuario está autenticado y tienes acceso a su historial de compras. Puedes usarlo para personalizar tus recomendaciones y respuestas. Por ejemplo, si compró algo antes y pregunta por productos similares, puedes mencionarlo."
 
         # Llamamos al servicio de IA mejorado
         respuesta_ia = await ia_service.get_ia_response(

@@ -197,6 +197,16 @@ export const createCategoryAPI = async (categoryData) => {
   }
 };
 
+export const updateCategoryAPI = async (categoryId, categoryData) => {
+  try {
+    const response = await axiosClient.put(`/admin/categories/${categoryId}`, categoryData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating category:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
 export const deleteCategoryAPI = async (categoryId) => {
   try {
     const response = await axiosClient.delete(`/admin/categories/${categoryId}`);

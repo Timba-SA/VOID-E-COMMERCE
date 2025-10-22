@@ -13,7 +13,8 @@ Base = declarative_base()
 class Categoria(Base):
     __tablename__ = "categorias"
     id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String(100), unique=True, nullable=False, index=True)
+    nombre = Column(String(100), unique=True, nullable=False, index=True)  # Mantener para compatibilidad
+    nombre_i18n = Column(JSON, nullable=True)  # {"es": "Remeras", "en": "T-shirts"}
     productos = relationship("Producto", back_populates="categoria")
 
 

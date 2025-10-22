@@ -226,9 +226,9 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
         # "shipments": { "cost": shipping_cost_float, "mode": "not_specified" }, # Ya va como item
         "payer": payer_data,
         "back_urls": {
-            "success": f"{FRONTEND_URL}/payment/success",
-            "failure": f"{FRONTEND_URL}/payment/failure",
-            "pending": f"{FRONTEND_URL}/payment/pending",
+            "success": f"{FRONTEND_URL.rstrip('/')}/payment/success",
+            "failure": f"{FRONTEND_URL.rstrip('/')}/payment/failure",
+            "pending": f"{FRONTEND_URL.rstrip('/')}/payment/pending",
         },
         # "auto_return": "approved", # Comentado
         "notification_url": f"{BACKEND_URL}/api/checkout/webhook",
