@@ -115,7 +115,7 @@ const CatalogPage = () => {
         if (!categoryName) return t('catalog_all_products');
         if (categoryName.toLowerCase() === 'menswear') return t('catalog_menswear');
         if (categoryName.toLowerCase() === 'womenswear') return t('catalog_womenswear');
-        return t(`category_${categoryName.toLowerCase()}`, categoryName.replace('-', ' ').toUpperCase());
+        return t(categoryName.toLowerCase(), categoryName.replace('-', ' ').toUpperCase());
     };
 
     const pageNumbers = [1, 2, 3, 4, 5]; 

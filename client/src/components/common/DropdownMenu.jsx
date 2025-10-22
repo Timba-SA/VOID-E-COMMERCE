@@ -33,11 +33,11 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
 
         setCategories({
           womenswear: womenswear.map(c => ({
-            name: t(`category_${c.nombre.toLowerCase()}`),
+            name: t(c.nombre.toLowerCase()),
             path: `/catalog/${c.nombre.toLowerCase()}`
           })),
           menswear: menswear.map(c => ({
-            name: t(`category_${c.nombre.toLowerCase()}`),
+            name: t(c.nombre.toLowerCase()),
             path: `/catalog/${c.nombre.toLowerCase()}`
           }))
         });
