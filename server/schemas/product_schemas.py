@@ -43,6 +43,9 @@ class Product(ProductBase):
     model_config = ConfigDict(from_attributes=True)
 
 # --- Esquema para Categorías (SQL) ---
+class CategoriaCreate(BaseModel):
+    nombre: str
+
 class Categoria(BaseModel):
     id: int
     nombre: str

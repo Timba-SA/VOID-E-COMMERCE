@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // Importamos las funciones de la API centralizadas
 import { getProducts, createProduct, deleteProduct } from '@/api/productsApi';
+import { getCategories } from '@/api/categoriesApi';
 
 const ProductManagement = () => {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ const ProductManagement = () => {
     precio: '',
     sku: '',
     stock: '',
-    categoria_id: 1, // Ejemplo
+    categoria_id: '', // Cambiado a string vacío para mejor manejo
   });
   const [imageFile, setImageFile] = useState(null);
 
@@ -22,6 +23,12 @@ const ProductManagement = () => {
   const { data: products, isLoading } = useQuery({
     queryKey: ['adminProducts'],
     queryFn: () => getProducts(), // Llamamos a la función importada
+  });
+
+  // Query para obtener categorías
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
   });
 
   // Mutación para crear productos
@@ -66,6 +73,11 @@ const ProductManagement = () => {
       alert("Por favor, selecciona una imagen para el producto.");
       return;
     }
+    
+    if (!productData.categoria_id) {
+      alert("Por favor, selecciona una categoría.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append('images', imageFile); // El backend espera 'images'
@@ -97,6 +109,27 @@ const ProductManagement = () => {
         <input type="number" name="precio" placeholder="Precio" onChange={handleInputChange} required />
         <input type="number" name="stock" placeholder="Stock" onChange={handleInputChange} required />
         <textarea name="descripcion" placeholder="Descripción" onChange={handleInputChange}></textarea>
+        
+        {/* Selector de categoría */}
+        <div>
+          <label>Categoría</label>
+          {categoriesLoading ? (
+            <p>Cargando categorías...</p>
+          ) : (
+            <select 
+              name="categoria_id" 
+              value={productData.categoria_id} 
+              onChange={handleInputChange} 
+              required
+              style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem' }}
+            >
+              <option value="">Selecciona una categoría</option>
+              {categories?.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+              ))}
+            </select>
+          )}
+        </div>
         
         <div>
           <label>Imagen del Producto</label>

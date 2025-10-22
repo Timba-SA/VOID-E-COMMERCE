@@ -41,6 +41,7 @@ const AdminProductVariantsPage = lazy(() => import('./pages/AdminProductVariants
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage.jsx'));
 const AdminOrderDetailPage = lazy(() => import('./pages/AdminOrderDetailPage.jsx'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'));
+const AdminCategoriesPage = lazy(() => import('./pages/AdminCategoriesPage.jsx'));
 
 
 const AppContent = () => {
@@ -167,6 +168,7 @@ const AppContent = () => {
                 <Route path="products/new" element={<AdminProductFormPage />} />
                 <Route path="products/edit/:productId" element={<AdminProductFormPage />} />
                 <Route path="products/:productId/variants" element={<AdminProductVariantsPage />} />
+                <Route path="categories" element={<AdminCategoriesPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
                 <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />

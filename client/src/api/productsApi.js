@@ -43,14 +43,21 @@ export const getProductById = async (id) => {
  */
 export const createProduct = async (productData) => {
   try {
+    console.log('🔵 Intentando crear producto...');
+    console.log('🔑 Token presente:', !!localStorage.getItem('authToken'));
+    
     const response = await axiosClient.post('/products/', productData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    
+    console.log('✅ Producto creado exitosamente:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating product:', error);
+    console.error('❌ Error creating product:', error);
+    console.error('❌ Status:', error.response?.status);
+    console.error('❌ Detail:', error.response?.data?.detail);
     throw error;
   }
 };

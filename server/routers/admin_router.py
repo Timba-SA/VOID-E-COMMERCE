@@ -7,10 +7,11 @@ from typing import List
 # --- ¡IMPORT NUEVO Y CLAVE! ---
 from pydantic import TypeAdapter 
 # --- FIN DEL IMPORT ---
-from schemas import admin_schemas, metrics_schemas, user_schemas
+from schemas import admin_schemas, metrics_schemas, user_schemas, product_schemas
 from database.database import get_db, get_db_nosql
 from database.models import Gasto, Orden, DetalleOrden, VarianteProducto, Producto, Categoria
 from services.auth_services import get_current_admin_user
+from services import cache_service
 from pymongo.database import Database
 from bson import ObjectId
 from sqlalchemy.orm import joinedload
@@ -244,3 +245,73 @@ async def deactivate_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
     return {"message": "Usuario desactivado con éxito."}
+
+
+# --- Endpoints de Categorías ---
+@router.get("/categories", response_model=List[product_schemas.Categoria])
+async def get_categories_admin(db: AsyncSession = Depends(get_db)):
+    """
+    Obtiene todas las categorías para el panel de administración.
+    """
+    result = await db.execute(select(Categoria).order_by(Categoria.nombre))
+    categories = result.scalars().all()
+    return categories
+
+@router.post("/categories", response_model=product_schemas.Categoria, status_code=status.HTTP_201_CREATED)
+async def create_category(category_data: product_schemas.CategoriaCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Crea una nueva categoría de productos.
+    """
+    # Verificar si ya existe una categoría con ese nombre
+    existing_category = await db.execute(
+        select(Categoria).where(Categoria.nombre == category_data.nombre)
+    )
+    if existing_category.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya existe una categoría con ese nombre"
+        )
+    
+    new_category = Categoria(nombre=category_data.nombre)
+    db.add(new_category)
+    await db.commit()
+    await db.refresh(new_category)
+    
+    # Invalidar el caché de categorías
+    await cache_service.delete_cache("all_categories")
+    
+    return new_category
+
+@router.delete("/categories/{category_id}", status_code=status.HTTP_200_OK)
+async def delete_category(category_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Elimina una categoría. Solo se puede eliminar si no tiene productos asociados.
+    """
+    result = await db.execute(select(Categoria).where(Categoria.id == category_id))
+    category = result.scalar_one_or_none()
+    
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Categoría no encontrada"
+        )
+    
+    # Verificar si tiene productos asociados
+    products_result = await db.execute(
+        select(func.count(Producto.id)).where(Producto.categoria_id == category_id)
+    )
+    products_count = products_result.scalar_one()
+    
+    if products_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se puede eliminar la categoría porque tiene {products_count} producto(s) asociado(s)"
+        )
+    
+    await db.delete(category)
+    await db.commit()
+    
+    # Invalidar el caché de categorías
+    await cache_service.delete_cache("all_categories")
+    
+    return {"message": "Categoría eliminada exitosamente"}

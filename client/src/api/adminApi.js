@@ -109,3 +109,34 @@ export const deleteVariantAPI = async (variantId) => {
     throw error.response?.data || error;
   }
 }
+
+// --- Category Management ---
+export const getCategoriesAdminAPI = async () => {
+  try {
+    const response = await axiosClient.get('/admin/categories');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching categories:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const createCategoryAPI = async (categoryData) => {
+  try {
+    const response = await axiosClient.post('/admin/categories', categoryData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating category:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const deleteCategoryAPI = async (categoryId) => {
+  try {
+    const response = await axiosClient.delete(`/admin/categories/${categoryId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting category:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
