@@ -30,6 +30,7 @@ const AdminLayout = () => {
           <NavLink to="/admin" end className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>{t('admin_nav_dashboard')}</NavLink>
           <NavLink to="/admin/products" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>{t('admin_nav_products')}</NavLink>
           <NavLink to="/admin/categories" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>Categorías</NavLink>
+          <NavLink to="/admin/expenses" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>{t('admin_nav_expenses', 'Gastos')}</NavLink>
           <NavLink to="/admin/orders" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>{t('admin_nav_orders')}</NavLink>
           <NavLink to="/admin/users" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"} onClick={() => setMobileMenuOpen(false)}>{t('admin_nav_users')}</NavLink>
         </nav>

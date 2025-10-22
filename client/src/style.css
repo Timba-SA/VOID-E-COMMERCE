@@ -343,6 +343,110 @@ main {
 }
 .input-group input:focus, .input-group textarea:focus { outline: none; border-bottom-color: #555; }
 .input-group textarea { resize: vertical; min-height: 80px; }
+
+/* Phone input with prefix selector - Minimalist style */
+.phone-input-wrapper {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #000;
+    transition: border-color 0.2s ease;
+}
+
+.phone-input-wrapper:focus-within {
+    border-bottom-color: #555;
+}
+
+.phone-prefix-select {
+    border: none;
+    border-right: 1px solid #e5e5e5;
+    background-color: transparent;
+    padding: 0.5rem 0.75rem 0.5rem 0;
+    font-size: 0.95rem;
+    font-family: var(--font-nav);
+    color: #000;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    background-size: 16px;
+    padding-right: 20px;
+    min-width: 105px;
+    letter-spacing: 0.02em;
+}
+
+.phone-prefix-select:disabled {
+    background-color: #f9f9f9;
+    cursor: not-allowed;
+    color: #999;
+}
+
+.phone-number-input {
+    border: none !important;
+    flex: 1;
+    padding: 0.5rem 0 0.5rem 0.75rem !important;
+    font-size: 1rem;
+    background-color: transparent;
+    font-family: var(--font-nav);
+    outline: none;
+}
+
+.phone-number-input::placeholder {
+    color: #ccc;
+    letter-spacing: 0.05em;
+}
+
+.phone-number-input:disabled {
+    background-color: transparent;
+    cursor: not-allowed;
+    color: #999;
+}
+
+/* Phone input group for RegisterPage - Two separate fields side by side */
+.phone-input-group {
+    display: flex;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.phone-input-group .prefix {
+    flex: 0 0 30%;
+    min-width: 135px;
+}
+
+.phone-input-group .phone-number {
+    flex: 1;
+}
+
+.phone-input-group select {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #000;
+    background-color: transparent;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    font-family: var(--font-nav);
+    color: #000;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    background-size: 16px;
+    padding-right: 20px;
+    letter-spacing: 0.02em;
+}
+
+.phone-input-group select:focus {
+    border-bottom-color: #555;
+}
+
 .forgot-password-link { align-self: flex-end; font-size: 0.8rem; color: #888; text-decoration: none; margin-top: 0.5rem; margin-bottom: 2.5rem; }
 .signup-section { width: 100%; margin-top: 5rem; padding-top: 2rem; border-top: 1px solid #e0e0e0; }
 .form-subtitle { font-weight: 500; font-size: 1rem; letter-spacing: 0.1em; margin-bottom: 1rem; color: #555; }
@@ -394,6 +498,67 @@ main {
 .place-order-button:hover:not(:disabled) { background-color: #fff; color: #000; }
 .place-order-button:disabled { background-color: #ccc; border-color: #ccc; cursor: not-allowed; }
 
+/* --- Selector de Direcciones en Checkout --- */
+.saved-addresses-selector {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.saved-addresses-selector label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.address-select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 0.95rem;
+  font-family: var(--font-nav);
+  color: #000;
+  background-color: #fff;
+  border: 2px solid #000;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+  padding-right: 3rem;
+}
+
+.address-select:hover {
+  border-color: #333;
+  background-color: #fafafa;
+}
+
+.address-select:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.address-select option {
+  padding: 0.75rem;
+  font-size: 0.95rem;
+}
+
+/* Deshabilitar inputs cuando se selecciona dirección guardada */
+.input-group input:disabled {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
 
 /* --- Mi Cuenta --- */
 .account-page-container { max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
@@ -406,6 +571,62 @@ main {
 .account-nav { margin: 2rem 0; }
 .account-nav-link { display: block; padding: 0.75rem 0; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.05em; color: #888; text-decoration: none; transition: color 0.2s ease; }
 .account-nav-link:hover, .account-nav-link.active { color: #000; font-weight: 700; }
+
+/* --- Direcciones (Address Management) --- */
+.address-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+.address-card { 
+  background: #fff; 
+  border: 1px solid #e0e0e0; 
+  border-radius: 4px; 
+  padding: 1.5rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem;
+  transition: box-shadow 0.2s ease;
+}
+.address-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.address-card-content p { margin: 0.25rem 0; font-size: 0.9rem; line-height: 1.5; }
+.address-card-content p:first-child { font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; }
+.address-card-actions { 
+  display: flex; 
+  gap: 0.75rem; 
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+.action-btn { 
+  flex: 1;
+  padding: 0.65rem 1rem; 
+  font-size: 0.85rem; 
+  font-weight: 600; 
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 3px;
+  cursor: pointer; 
+  transition: all 0.2s ease;
+  background: #fff;
+}
+.action-btn.edit { 
+  color: #007bff; 
+  border-color: #007bff; 
+}
+.action-btn.edit:hover { 
+  background: #007bff; 
+  color: #fff; 
+}
+.action-btn.delete { 
+  color: #dc3545; 
+  border-color: #dc3545; 
+}
+.action-btn.delete:hover { 
+  background: #dc3545; 
+  color: #fff; 
+}
+.action-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
 
 /* --- Admin --- */
 .admin-dashboard-container { display: flex; flex-grow: 1; width: 100%; background-color: #f8f9fa; }
@@ -423,6 +644,285 @@ main {
 .widget { background: #fff; padding: 1.5rem; border: 1px solid #e9ecef; border-radius: 4px; }
 .widget h3 { margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 600; color: #6c757d; text-transform: uppercase; }
 .widget-value { font-size: 2.2rem; font-weight: 700; color: #000; }
+
+/* --- Estilos para el contenedor de gráficos --- */
+.admin-charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.chart-widget {
+  background: #fff;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+
+.chart-widget h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 350px;
+}
+
+.chart-full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-half-width {
+  grid-column: span 1;
+}
+
+/* Responsive para gráficos */
+@media (max-width: 992px) {
+  .admin-charts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-half-width {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Mensaje cuando no hay datos en gráficos */
+.no-data-message {
+  grid-column: 1 / -1;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 2rem;
+  text-align: center;
+  color: #856404;
+}
+
+.no-data-message p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Estado vacío dentro de un gráfico */
+.chart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #6c757d;
+}
+
+.chart-empty-state p {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.chart-empty-state .btn {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.chart-empty-state .btn:hover {
+  background-color: #0056b3;
+}
+
+/* --- Estilos para Gestión de Gastos --- */
+
+.expense-management {
+  padding: 0;
+}
+
+.expense-form-container {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.expense-form-container h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-group .required {
+  color: #dc3545;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-primary:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.expenses-table-container {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 2rem;
+}
+
+.expenses-table-container h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.category-tecnología {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.category-marketing {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.category-logística {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.category-finanzas {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.category-operaciones {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+.category-rrhh,
+.category-recursos-humanos {
+  background-color: #e0f2f1;
+  color: #00796b;
+}
+
+.category-otros {
+  background-color: #f5f5f5;
+  color: #616161;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* --- Fin de estilos de gráficos --- */
+
 .admin-table { 
   width: 100%; 
   border-collapse: collapse; 
@@ -2162,4 +2662,467 @@ body:has(.product-details-container-full) .main-header {
 .back-link:hover {
   color: #0056b3;
   text-decoration: underline;
+}
+
+/* =================================================================== */
+/* ORDER HISTORY - DISEÑO MINIMALISTA PROFESIONAL
+/* =================================================================== */
+
+.order-history-container {
+    width: 100%;
+    max-width: 1000px;
+}
+
+.order-history-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    color: #000;
+    letter-spacing: -0.02em;
+}
+
+/* No orders state */
+.no-orders-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    background: #fafafa;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
+}
+
+.no-orders-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-orders-content h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #000;
+    margin: 0 0 0.5rem 0;
+}
+
+.no-orders-content p {
+    color: #737373;
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+/* Orders list */
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Order card */
+.order-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: all 0.15s ease;
+}
+
+.order-card:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.order-card.expanded {
+    border-color: #000;
+}
+
+/* Order header */
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f5f5f5;
+    gap: 1rem;
+}
+
+.order-header-main {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.order-id {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.order-label {
+    font-size: 0.6875rem;
+    color: #737373;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.order-number {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #000;
+}
+
+.order-date {
+    font-size: 0.9375rem;
+    color: #525252;
+}
+
+.order-header-side {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.order-total {
+    text-align: right;
+}
+
+.total-label {
+    display: block;
+    font-size: 0.6875rem;
+    color: #737373;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.total-amount {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #000;
+}
+
+/* Status badges in order history */
+.order-status {
+    padding: 0.375rem 0.75rem;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.order-status.status-success {
+    background-color: #000;
+    color: #fff;
+}
+
+.order-status.status-warning {
+    background-color: #fbbf24;
+    color: #000;
+}
+
+.order-status.status-danger {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.order-status.status-default {
+    background-color: #f5f5f5;
+    color: #525252;
+}
+
+/* Order meta */
+.order-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #525252;
+}
+
+.order-meta .meta-item strong {
+    font-weight: 600;
+    color: #000;
+}
+
+.meta-divider {
+    color: #d4d4d4;
+}
+
+/* Details toggle button */
+.details-toggle-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #fafafa;
+    border: 1px solid #e5e5e5;
+    border-radius: 2px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.details-toggle-btn:hover:not(:disabled) {
+    background: #f5f5f5;
+    border-color: #d4d4d4;
+}
+
+.details-toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.chevron-icon {
+    transition: transform 0.2s ease;
+}
+
+.chevron-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Expanded details panel */
+.order-details-panel {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e5e5;
+    animation: fadeInPanel 0.2s ease;
+}
+
+@keyframes fadeInPanel {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.details-section {
+    margin-bottom: 2rem;
+}
+
+.details-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 1rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Products grid */
+.products-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.product-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    background: #fafafa;
+    border: 1px solid #f5f5f5;
+    border-radius: 2px;
+    gap: 1rem;
+}
+
+.product-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.product-name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #000;
+    margin-bottom: 0.5rem;
+}
+
+.product-variants {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.variant-tag {
+    padding: 0.25rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    color: #525252;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.product-pricing {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 150px;
+}
+
+.price-detail {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.875rem;
+}
+
+.price-label {
+    color: #737373;
+}
+
+.price-value {
+    font-weight: 500;
+    color: #000;
+}
+
+.price-detail.subtotal {
+    padding-top: 0.375rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+.price-detail.subtotal .price-value {
+    font-weight: 600;
+}
+
+/* Address box */
+.address-box {
+    padding: 1rem;
+    background: #fafafa;
+    border: 1px solid #f5f5f5;
+    border-radius: 2px;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.address-box p {
+    margin: 0.25rem 0;
+    color: #525252;
+}
+
+.address-name {
+    font-weight: 600;
+    color: #000 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.address-note {
+    font-style: italic;
+    color: #737373 !important;
+}
+
+.address-phone {
+    margin-top: 0.5rem !important;
+    color: #000 !important;
+}
+
+/* Payment info */
+.payment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: #fafafa;
+    border: 1px solid #f5f5f5;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    font-size: 0.9375rem;
+}
+
+.info-row:not(:last-child) {
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.info-label {
+    color: #737373;
+    font-weight: 500;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #000;
+}
+
+.payment-id {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8125rem;
+    background: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 2px;
+    border: 1px solid #e5e5e5;
+}
+
+.info-row.total-row {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.total-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #000 !important;
+}
+
+/* Order History Responsive design */
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .order-header-main {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .order-header-side {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .product-row {
+        flex-direction: column;
+    }
+
+    .product-pricing {
+        text-align: left;
+        width: 100%;
+    }
+
+    .price-detail {
+        justify-content: space-between;
+    }
+
+    .info-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
 }

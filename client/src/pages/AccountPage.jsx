@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 const ProfileManagement = lazy(() => import('../components/account/ProfileManagement'));
 const AddressManagement = lazy(() => import('../components/account/AddressManagement'));
+const OrderHistory = lazy(() => import('../components/account/OrderHistory'));
 
 const AccountPage = () => {
   const { t } = useTranslation(); // Inicializar
@@ -40,13 +41,6 @@ const AccountPage = () => {
       logout();
     }, 0);
   };
-  
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency', currency: 'ARS',
-        minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(price).replace("ARS", "$").trim();
-  };
 
   const renderContent = () => {
     switch (activeView) {
@@ -56,34 +50,7 @@ const AccountPage = () => {
         return <AddressManagement />;
       case 'orders':
       default:
-        return loading ? <Spinner message="Loading history..." /> : (
-          orders.length > 0 ? (
-            <table className="account-table">
-              <thead>
-                <tr>
-                  <th>{t('account_table_order_id')}</th>
-                  <th>{t('account_table_date')}</th>
-                  <th>{t('account_table_total')}</th>
-                  <th>{t('account_table_status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map(order => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td>
-                    <td>{new Date(order.creado_en).toLocaleDateString('en-CA')}</td>
-                    <td>{formatPrice(order.monto_total)}</td>
-                    <td>
-                      <span className={`status-badge status-${order.estado_pago?.toLowerCase()}`}>
-                        {order.estado_pago || 'N/A'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : <p className="no-orders-message">{t('account_no_orders')}</p>
-        );
+        return <OrderHistory orders={orders} loading={loading} />;
     }
   };
 

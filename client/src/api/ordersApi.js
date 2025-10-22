@@ -14,3 +14,18 @@ export const getMyOrdersAPI = async () => {
     throw error.response?.data || error;
   }
 };
+
+/**
+ * Obtiene los detalles completos de una orden específica del usuario.
+ * @param {number} orderId - ID de la orden
+ * @returns {Promise<Object>} Los detalles completos de la orden incluyendo productos
+ */
+export const getOrderDetailsAPI = async (orderId) => {
+  try {
+    const response = await axiosClient.get(`/orders/me/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching order details:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};

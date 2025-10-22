@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import {
     getKpisAPI,
     getSalesOverTimeAPI,
-    getExpensesByCategoryAPI
+    getExpensesByCategoryAPI,
+    getSalesByCategoryAPI,
+    getTopProductsAPI,
+    getUserActivityAPI
 } from '../api/adminApi';
 import Spinner from '../components/common/Spinner';
 import AdminCharts from '../components/admin/AdminCharts';
@@ -13,6 +16,9 @@ const AdminDashboardPage = () => {
   const [kpis, setKpis] = useState(null);
   const [salesData, setSalesData] = useState(null);
   const [expensesData, setExpensesData] = useState(null);
+  const [salesByCategoryData, setSalesByCategoryData] = useState(null);
+  const [topProductsData, setTopProductsData] = useState(null);
+  const [userActivityData, setUserActivityData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -20,22 +26,37 @@ const AdminDashboardPage = () => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [kpisResponse, salesResponse, expensesResponse] = await Promise.all([
+        const [
+          kpisResponse, 
+          salesResponse, 
+          expensesResponse,
+          salesByCategoryResponse,
+          topProductsResponse,
+          userActivityResponse
+        ] = await Promise.all([
           getKpisAPI(),
           getSalesOverTimeAPI(),
-          getExpensesByCategoryAPI()
+          getExpensesByCategoryAPI(),
+          getSalesByCategoryAPI(),
+          getTopProductsAPI(5),
+          getUserActivityAPI()
         ]);
+        
         setKpis(kpisResponse);
         setSalesData(salesResponse);
         setExpensesData(expensesResponse);
+        setSalesByCategoryData(salesByCategoryResponse);
+        setTopProductsData(topProductsResponse);
+        setUserActivityData(userActivityResponse);
       } catch (err) {
+        console.error('Error fetching dashboard data:', err);
         setError(err.detail || t('admin_dashboard_error', 'Could not load dashboard data.'));
       } finally {
         setLoading(false);
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [t]);
 
   if (loading) return <Spinner message={t('admin_dashboard_loading')} />;
 
@@ -75,7 +96,13 @@ const AdminDashboardPage = () => {
           </div>
         )}
         <div className="dashboard-charts-section">
-          <AdminCharts salesData={salesData} expensesData={expensesData} />
+          <AdminCharts 
+            salesData={salesData} 
+            expensesData={expensesData}
+            salesByCategoryData={salesByCategoryData}
+            topProductsData={topProductsData}
+            userActivityData={userActivityData}
+          />
         </div>
     </>
   );

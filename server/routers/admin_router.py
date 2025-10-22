@@ -23,20 +23,47 @@ router = APIRouter(
 )
 
 
-# --- Endpoints de Gastos (SIN CAMBIOS) ---
+# --- Endpoints de Gastos ---
 @router.get("/expenses", response_model=List[admin_schemas.Gasto])
 async def get_expenses(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Gasto))
+    """
+    Obtiene todos los gastos registrados, ordenados por fecha descendente.
+    """
+    result = await db.execute(
+        select(Gasto).order_by(Gasto.fecha.desc())
+    )
     expenses = result.scalars().all()
     return expenses
 
 @router.post("/expenses", response_model=admin_schemas.Gasto, status_code=201)
 async def create_expense(gasto: admin_schemas.GastoCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Crea un nuevo gasto en el sistema.
+    """
     new_expense = Gasto(**gasto.model_dump())
     db.add(new_expense)
     await db.commit()
     await db.refresh(new_expense)
     return new_expense
+
+@router.delete("/expenses/{expense_id}", status_code=status.HTTP_200_OK)
+async def delete_expense(expense_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Elimina un gasto por su ID.
+    """
+    result = await db.execute(select(Gasto).where(Gasto.id == expense_id))
+    expense = result.scalar_one_or_none()
+    
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Gasto no encontrado"
+        )
+    
+    await db.delete(expense)
+    await db.commit()
+    
+    return {"message": "Gasto eliminado exitosamente"}
 
 
 # --- Endpoints de Ventas (SIN CAMBIOS) ---
@@ -243,7 +270,10 @@ async def get_product_metrics(db: AsyncSession = Depends(get_db)):
 
 @router.get("/charts/sales-over-time", response_model=metrics_schemas.SalesOverTimeChart)
 async def get_sales_over_time(db: AsyncSession = Depends(get_db)):
-    # ... (código sin cambios)
+    """
+    Obtiene las ventas totales agrupadas por fecha.
+    Solo incluye órdenes con estado_pago = 'Aprobado'.
+    """
     sales_data = await db.execute(
         select(
             func.date(Orden.creado_en).label("fecha"),
@@ -253,12 +283,21 @@ async def get_sales_over_time(db: AsyncSession = Depends(get_db)):
         .group_by(func.date(Orden.creado_en))
         .order_by(func.date(Orden.creado_en))
     )
-    result = [metrics_schemas.SalesDataPoint(fecha=row.fecha, total=float(row.total)) for row in sales_data.all()]
+    
+    rows = sales_data.all()
+    result = [
+        metrics_schemas.SalesDataPoint(fecha=row.fecha, total=float(row.total)) 
+        for row in rows
+    ]
+    
     return metrics_schemas.SalesOverTimeChart(data=result)
 
 @router.get("/charts/expenses-by-category", response_model=metrics_schemas.ExpensesByCategoryChart)
 async def get_expenses_by_category(db: AsyncSession = Depends(get_db)):
-    # ... (código sin cambios)
+    """
+    Obtiene los gastos totales agrupados por categoría.
+    Retorna array vacío si no hay gastos registrados.
+    """
     expenses_data = await db.execute(
         select(
             Gasto.categoria,
@@ -267,8 +306,134 @@ async def get_expenses_by_category(db: AsyncSession = Depends(get_db)):
         .group_by(Gasto.categoria)
         .order_by(func.sum(Gasto.monto).desc())
     )
-    result = [metrics_schemas.ExpensesByCategoryDataPoint(categoria=row.categoria, monto=float(row.monto)) for row in expenses_data.all()]
+    
+    rows = expenses_data.all()
+    result = [
+        metrics_schemas.ExpensesByCategoryDataPoint(categoria=row.categoria, monto=float(row.monto)) 
+        for row in rows
+    ]
+    
     return metrics_schemas.ExpensesByCategoryChart(data=result)
+
+# --- NUEVOS ENDPOINTS DE GRÁFICOS ---
+
+@router.get("/charts/sales-by-category", response_model=metrics_schemas.SalesByCategoryChart)
+async def get_sales_by_category(db: AsyncSession = Depends(get_db)):
+    """
+    Obtiene las ventas totales por categoría de producto (para gráfico de torta).
+    Solo considera órdenes con estado_pago = 'Aprobado'.
+    """
+    # Query compleja que une órdenes -> detalles -> variantes -> productos -> categorías
+    sales_by_category_data = await db.execute(
+        select(
+            Categoria.nombre.label("categoria"),
+            func.sum(DetalleOrden.precio_en_momento_compra * DetalleOrden.cantidad).label("total_vendido")
+        )
+        .select_from(Orden)
+        .join(DetalleOrden, Orden.id == DetalleOrden.orden_id)
+        .join(VarianteProducto, DetalleOrden.variante_producto_id == VarianteProducto.id)
+        .join(Producto, VarianteProducto.producto_id == Producto.id)
+        .join(Categoria, Producto.categoria_id == Categoria.id)
+        .where(Orden.estado_pago == "Aprobado")
+        .group_by(Categoria.nombre)
+        .order_by(func.sum(DetalleOrden.precio_en_momento_compra * DetalleOrden.cantidad).desc())
+    )
+    
+    rows = sales_by_category_data.all()
+    total_general = sum(float(row.total_vendido) for row in rows)
+    
+    result = [
+        metrics_schemas.SalesByCategoryDataPoint(
+            categoria=row.categoria,
+            total_vendido=float(row.total_vendido),
+            porcentaje=round((float(row.total_vendido) / total_general * 100), 2) if total_general > 0 else 0
+        )
+        for row in rows
+    ]
+    
+    return metrics_schemas.SalesByCategoryChart(data=result)
+
+@router.get("/charts/top-products", response_model=metrics_schemas.TopProductsChart)
+async def get_top_products(db: AsyncSession = Depends(get_db), limit: int = 5):
+    """
+    Obtiene el top N de productos más vendidos (por cantidad).
+    Solo considera órdenes con estado_pago = 'Aprobado'.
+    """
+    top_products_data = await db.execute(
+        select(
+            Producto.nombre.label("nombre_producto"),
+            func.sum(DetalleOrden.cantidad).label("cantidad_vendida"),
+            func.sum(DetalleOrden.precio_en_momento_compra * DetalleOrden.cantidad).label("ingresos_totales")
+        )
+        .select_from(Orden)
+        .join(DetalleOrden, Orden.id == DetalleOrden.orden_id)
+        .join(VarianteProducto, DetalleOrden.variante_producto_id == VarianteProducto.id)
+        .join(Producto, VarianteProducto.producto_id == Producto.id)
+        .where(Orden.estado_pago == "Aprobado")
+        .group_by(Producto.nombre)
+        .order_by(func.sum(DetalleOrden.cantidad).desc())
+        .limit(limit)
+    )
+    
+    result = [
+        metrics_schemas.TopProductDataPoint(
+            nombre_producto=row.nombre_producto,
+            cantidad_vendida=int(row.cantidad_vendida),
+            ingresos_totales=float(row.ingresos_totales)
+        )
+        for row in top_products_data.all()
+    ]
+    
+    return metrics_schemas.TopProductsChart(data=result)
+
+@router.get("/charts/user-activity", response_model=metrics_schemas.UserActivityChart)
+async def get_user_activity(db: Database = Depends(get_db_nosql)):
+    """
+    Obtiene la actividad de usuarios (registros por día) en los últimos 30 días.
+    Los datos vienen de MongoDB.
+    """
+    from datetime import datetime, timedelta
+    
+    # Fecha de hace 30 días
+    fecha_inicio = datetime.now() - timedelta(days=30)
+    
+    # Agregación en MongoDB para agrupar usuarios por fecha de creación
+    pipeline = [
+        {
+            "$match": {
+                "created_at": {"$gte": fecha_inicio}
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "$dateToString": {
+                        "format": "%Y-%m-%d",
+                        "date": "$created_at"
+                    }
+                },
+                "count": {"$sum": 1}
+            }
+        },
+        {
+            "$sort": {"_id": 1}
+        }
+    ]
+    
+    cursor = db.users.aggregate(pipeline)
+    results = await cursor.to_list(length=None)
+    
+    result = [
+        metrics_schemas.UserActivityDataPoint(
+            fecha=datetime.strptime(item["_id"], "%Y-%m-%d").date(),
+            nuevos_usuarios=item["count"]
+        )
+        for item in results
+    ]
+    
+    return metrics_schemas.UserActivityChart(data=result)
+
+# --- FIN DE NUEVOS ENDPOINTS ---
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_200_OK, summary="Desactivar un usuario (Soft Delete)")
 async def deactivate_user(

@@ -29,3 +29,28 @@ class ExpensesByCategoryDataPoint(BaseModel):
 
 class ExpensesByCategoryChart(BaseModel):
     data: List[ExpensesByCategoryDataPoint]
+
+# --- Nuevos schemas para gráficos adicionales ---
+
+class SalesByCategoryDataPoint(BaseModel):
+    categoria: str
+    total_vendido: float
+    porcentaje: float
+
+class SalesByCategoryChart(BaseModel):
+    data: List[SalesByCategoryDataPoint]
+
+class TopProductDataPoint(BaseModel):
+    nombre_producto: str
+    cantidad_vendida: int
+    ingresos_totales: float
+
+class TopProductsChart(BaseModel):
+    data: List[TopProductDataPoint]
+
+class UserActivityDataPoint(BaseModel):
+    fecha: date
+    nuevos_usuarios: int
+
+class UserActivityChart(BaseModel):
+    data: List[UserActivityDataPoint]

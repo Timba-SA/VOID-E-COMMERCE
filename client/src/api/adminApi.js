@@ -57,6 +57,40 @@ export const getKpisAPI = async () => {
   }
 };
 
+// --- Expenses Management ---
+
+export const getExpensesAPI = async () => {
+  try {
+    const response = await axiosClient.get('/admin/expenses');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching expenses:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const createExpenseAPI = async (expenseData) => {
+  try {
+    const response = await axiosClient.post('/admin/expenses', expenseData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating expense:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const deleteExpenseAPI = async (expenseId) => {
+  try {
+    const response = await axiosClient.delete(`/admin/expenses/${expenseId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting expense:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+// --- Charts ---
+
 export const getSalesOverTimeAPI = async () => {
   try {
     const response = await axiosClient.get('/admin/charts/sales-over-time');
@@ -73,6 +107,38 @@ export const getExpensesByCategoryAPI = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching expenses by category:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+// --- Nuevos endpoints de gráficos ---
+
+export const getSalesByCategoryAPI = async () => {
+  try {
+    const response = await axiosClient.get('/admin/charts/sales-by-category');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching sales by category:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const getTopProductsAPI = async (limit = 5) => {
+  try {
+    const response = await axiosClient.get(`/admin/charts/top-products?limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching top products:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+export const getUserActivityAPI = async () => {
+  try {
+    const response = await axiosClient.get('/admin/charts/user-activity');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user activity:', error.response?.data?.detail || error.message);
     throw error.response?.data || error;
   }
 };

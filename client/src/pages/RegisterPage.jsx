@@ -5,6 +5,7 @@ import { registerUser, loginUser } from '../api/authApi';
 import { useAuthStore } from '../stores/useAuthStore';
 import { mergeCartAPI } from '../api/cartApi';
 import { NotificationContext } from '../context/NotificationContext';
+import { countryPrefixes } from '../utils/countryPrefixes';
 
 const RegisterPage = () => {
   const { t } = useTranslation(); // Inicializar
@@ -96,11 +97,22 @@ const RegisterPage = () => {
         <div className="phone-input-group">
           <div className="input-group prefix">
             <label htmlFor="phonePrefix">{t('register_prefix_label')}</label>
-            <input type="text" id="phonePrefix" name="phonePrefix" value={formData.phonePrefix} onChange={handleChange} />
+            <select 
+              id="phonePrefix" 
+              name="phonePrefix" 
+              value={formData.phonePrefix} 
+              onChange={handleChange}
+            >
+              {countryPrefixes.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.code} {country.iso}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="input-group phone-number">
             <label htmlFor="phoneNumber">{t('register_phone_label')}</label>
-            <input type="tel" id="phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
+            <input type="tel" id="phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="2616657396" />
           </div>
         </div>
         <div className="checkbox-group">

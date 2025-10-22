@@ -37,6 +37,7 @@ async def check_orders():
                 print(f"   Estado Pago: {order.estado_pago}")
                 print(f"   Método de Pago: {order.metodo_pago}")
                 print(f"   Payment ID MP: {order.payment_id_mercadopago}")
+                print(f"   📍 Dirección de Envío: {order.direccion_envio}")
                 print(f"   Creado en: {order.creado_en}")
                 
                 # Obtener detalles

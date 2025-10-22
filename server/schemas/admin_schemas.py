@@ -51,7 +51,7 @@ class DetalleOrdenOut(BaseModel):
 class VarianteProductoInfo(BaseModel):
     tamanio: str
     color: str
-    producto_nombre: str  # Nombre del producto al que pertenece la variante
+    producto_nombre: str
 
     class Config:
         from_attributes = True
@@ -65,6 +65,23 @@ class DetalleOrdenDetallado(BaseModel):
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """Custom validator para extraer el nombre del producto desde la relación"""
+        # Construir el objeto VarianteProductoInfo manualmente
+        variante_info = VarianteProductoInfo(
+            tamanio=obj.variante_producto.tamanio,
+            color=obj.variante_producto.color,
+            producto_nombre=obj.variante_producto.producto.nombre
+        )
+        
+        return cls(
+            variante_producto_id=obj.variante_producto_id,
+            cantidad=obj.cantidad,
+            precio_en_momento_compra=obj.precio_en_momento_compra,
+            variante_producto=variante_info
+        )
 
 # CORREGIDO: El esquema para mostrar una orden
 class Orden(BaseModel): # Renombrado de OrdenOut para más claridad
@@ -89,6 +106,9 @@ class OrdenDetallada(BaseModel):
     estado: Optional[str]
     estado_pago: Optional[str]
     creado_en: datetime
+    direccion_envio: Optional[dict] = None
+    metodo_pago: Optional[str] = None
+    payment_id_mercadopago: Optional[str] = None
     detalles: List[DetalleOrdenDetallado]
 
     class Config:

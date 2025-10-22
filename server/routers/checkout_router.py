@@ -2,6 +2,7 @@
 
 import mercadopago
 import logging
+import json
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,6 +12,7 @@ from database.database import get_db #
 from database.models import Orden, DetalleOrden, VarianteProducto, Producto #
 from schemas import checkout_schemas #
 from workers.transactional_tasks import enviar_email_confirmacion_compra_task #
+from services.cache_service import get_cache, set_cache #
 
 router = APIRouter(prefix="/api/checkout", tags=["Checkout"])
 logging.basicConfig(level=logging.INFO)
@@ -173,6 +175,28 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
 
     # Referencia externa (igual que tu código original)
     external_reference = str(cart.user_id or cart.guest_session_id or "guest")
+
+    # --- GUARDAR DIRECCIÓN EN REDIS PARA RECUPERARLA EN EL WEBHOOK ---
+    address_cache_key = f"checkout_address:{external_reference}"
+    
+    # Convertir la dirección a dict para guardar en Redis
+    address_dict = {
+        "firstName": address.firstName if hasattr(address, 'firstName') else None,
+        "lastName": address.lastName if hasattr(address, 'lastName') else None,
+        "email": address.email if hasattr(address, 'email') else None,
+        "streetAddress": address.streetAddress if hasattr(address, 'streetAddress') else None,
+        "city": address.city if hasattr(address, 'city') else None,
+        "state": address.state if hasattr(address, 'state') else None,
+        "postalCode": address.postalCode if hasattr(address, 'postalCode') else None,
+        "country": address.country if hasattr(address, 'country') else None,
+        "prefix": address.prefix if hasattr(address, 'prefix') else None,
+        "phone": address.phone if hasattr(address, 'phone') else None,
+        "comments": address.comments if hasattr(address, 'comments') else None,
+    }
+    
+    # Guardar en Redis con TTL de 1 hora (suficiente para que se complete el pago)
+    await set_cache(address_cache_key, address_dict, expire_seconds=3600)
+    logger.info(f"📍 Dirección guardada en Redis para {external_reference}")
 
     # Datos del pagador (igual que tu código original, asegurando string en phone)
     # IMPORTANTE: Asegúrate que el objeto 'address' que llega del frontend TENGA todos estos campos.
@@ -341,16 +365,28 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                 #    raise HTTPException(status_code=400, detail=f"Faltan items para {payment_id}")
 
 
-                # Datos de envío (usamos payer como fallback)
-                shipping_address_to_save = {
-                    "firstName": payer_info.get("first_name"),
-                    "lastName": payer_info.get("last_name"),
-                    "email": payer_email,
-                    "phone": payer_info.get("phone", {}).get("number"),
-                    "streetAddress": address_info.get("street_name"),
-                    "streetNumber": address_info.get("street_number"),
-                    "zipCode": address_info.get("zip_code"),
-                }
+                # Datos de envío (intentamos obtener desde Redis primero)
+                address_cache_key = f"checkout_address:{external_reference}"
+                cached_address = await get_cache(address_cache_key)
+                
+                if cached_address:
+                    # Recuperar dirección guardada en el checkout
+                    shipping_address_to_save = cached_address
+                    logger.info(f"📍 Dirección recuperada desde Redis para {external_reference}")
+                    # Limpiar de Redis después de usarla (usando set_cache con expire=0 o simplemente dejarlo expirar)
+                    # await set_cache(address_cache_key, None, expire_seconds=1)  # Opcional
+                else:
+                    # Fallback: usar datos de Mercado Pago (usamos payer como fallback)
+                    logger.warning(f"⚠️ No se encontró dirección en Redis para {external_reference}. Usando datos de MP.")
+                    shipping_address_to_save = {
+                        "firstName": payer_info.get("first_name"),
+                        "lastName": payer_info.get("last_name"),
+                        "email": payer_email,
+                        "phone": payer_info.get("phone", {}).get("number"),
+                        "streetAddress": address_info.get("street_name"),
+                        "streetNumber": address_info.get("street_number"),
+                        "zipCode": address_info.get("zip_code"),
+                    }
 
                 # --- Inicio Transacción DB ---
                 new_order_id = None
