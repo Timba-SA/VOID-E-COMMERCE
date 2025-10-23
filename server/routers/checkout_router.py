@@ -305,6 +305,38 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
     await set_cache_async(checkout_cache_key, checkout_data, expire_seconds=3600)
     logger.info(f"✅ Datos del checkout guardados en Redis para {external_reference}")
 
+    # --- NUEVA LÓGICA: Crear orden pendiente ANTES de crear la preferencia MP
+    # Esto permite que el frontend identifique la orden por order_id tras el
+    # redirect incluso si el webhook no llega en entorno local.
+    new_order_id = None
+    try:
+        new_order_id = await save_order_and_update_stock(
+            db=db,
+            usuario_id=external_reference,
+            monto_total=total_amount_calculated,
+            payment_id=None,  # NULL para evitar conflictos con índice UNIQUE
+            items_comprados=items_para_orden,
+            metodo_pago="Mercado Pago",
+            payer_email=checkout_data.get("payer_email"),
+            shipping_address=checkout_data.get("shipping_address"),
+            pending_payment=True
+        )
+        await db.commit()
+        logger.info(f"✅ Orden PENDIENTE creada pre-pref: {new_order_id}")
+
+        # Guardar el checkout en cache asociado a la order_id
+        checkout_cache_key = f"checkout_data_order:{new_order_id}"
+        await set_cache_async(checkout_cache_key, checkout_data, expire_seconds=3600)
+        logger.info(f"✅ Datos del checkout guardados en Redis para orden {new_order_id}")
+
+        # Usar order_id como referencia externa para MP y para las back_urls
+        external_reference = str(new_order_id)
+
+    except Exception as e:
+        logger.exception(f"💥 No se pudo crear orden PENDIENTE pre-pref: {e}")
+        # Mantener el comportamiento: ya guardamos el checkout por usuario
+        new_order_id = None
+
     # Datos del pagador (igual que tu código original, asegurando string en phone)
     # IMPORTANTE: Asegúrate que el objeto 'address' que llega del frontend TENGA todos estos campos.
     #             Si falta alguno (ej. email), MP podría rechazar la preferencia.
@@ -328,27 +360,38 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
     }
 
     # Armado de preference_data
+    # Construir back_urls; si creamos una orden pendiente, añadir order_id
+    success_url = f"{FRONTEND_URL.rstrip('/')}/payment/success"
+    failure_url = f"{FRONTEND_URL.rstrip('/')}/payment/failure"
+    pending_url = f"{FRONTEND_URL.rstrip('/')}/payment/pending"
+    if new_order_id:
+        success_url = f"{success_url}?order_id={new_order_id}"
+        failure_url = f"{failure_url}?order_id={new_order_id}"
+        pending_url = f"{pending_url}?order_id={new_order_id}"
+
     preference_data = {
         "items": items_for_preference,
         "payer": payer_data,
         "back_urls": {
-            "success": f"{FRONTEND_URL.rstrip('/')}/payment/success",
-            "failure": f"{FRONTEND_URL.rstrip('/')}/payment/failure",
-            "pending": f"{FRONTEND_URL.rstrip('/')}/payment/pending",
+            "success": success_url,
+            "failure": failure_url,
+            "pending": pending_url,
         },
         "notification_url": f"{BACKEND_URL}/api/checkout/webhook",
-        "external_reference": external_reference,  # Solo el usuario_id
+        "external_reference": external_reference,
         "statement_descriptor": "VOID E-COMMERCE",
     }
     
-    # Solo agregar auto_return y binary_mode en PRODUCCIÓN (HTTPS)
-    # En localhost (HTTP), MP rechaza auto_return con error 400
-    if FRONTEND_URL.startswith("https://"):
-        preference_data["auto_return"] = "approved"  # Redirección automática en producción
-        preference_data["binary_mode"] = True  # Estados binarios (approved/rejected)
-        logger.info(f"🔒 HTTPS detectado - auto_return='approved' y binary_mode activados")
+    # Solo habilitar auto_return si el FRONTEND es HTTPS (MP lo requiere)
+    if success_url.startswith("https://"):
+        preference_data["auto_return"] = "approved"
+        preference_data["binary_mode"] = True
+        logger.info(f"✅ HTTPS detectado - auto_return='approved' habilitado")
     else:
-        logger.info(f"🏠 HTTP/localhost detectado - auto_return desactivado (MP requiere HTTPS)")
+        # En localhost (HTTP), NO usar auto_return (MP lo rechaza con error 400)
+        logger.warning(f"⚠️ HTTP/localhost detectado - auto_return DESHABILITADO (MP requiere HTTPS)")
+        logger.warning(f"💡 Para habilitar auto_return, expone el frontend con ngrok: ngrok http 5173")
+        logger.warning(f"💡 Luego actualiza FRONTEND_URL en .env con la URL de ngrok")
 
     logger.info(f"📦 Creando preferencia MP para {external_reference}. Total: {total_amount_calculated:.2f} ARS")
     # logger.debug(f"Payload MP: {preference_data}")
@@ -375,7 +418,16 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
             raise HTTPException(status_code=500, detail="Respuesta inválida MP.")
 
         logger.info(f"✅ Preferencia MP creada: ID={preference.get('id')}")
-        return {"preference_id": preference.get("id"), "init_point": preference.get("init_point")}
+        
+        # Incluir order_id en la respuesta para que el frontend lo tenga
+        response_data = {
+            "preference_id": preference.get("id"), 
+            "init_point": preference.get("init_point")
+        }
+        if new_order_id:
+            response_data["order_id"] = new_order_id
+        
+        return response_data
 
     except HTTPException as http_exc:
          raise http_exc
@@ -470,7 +522,7 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
 
             # 3. Procesar SOLO si está APROBADO
             if payment_info.get("status") == "approved":
-                logger.info(f"✅ Pago {payment_id} aprobado. Creando orden...")
+                logger.info(f"✅ Pago {payment_id} aprobado. Procesando orden existente o creando nueva si es necesario...")
 
                 external_reference = payment_info.get("external_reference")
                 transaction_amount = payment_info.get("transaction_amount")
@@ -483,6 +535,52 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     logger.error(f"❌ CRÍTICO [Pago {payment_id}]: Falta transaction_amount.")
                     raise HTTPException(status_code=400, detail=f"Falta transaction_amount para {payment_id}")
 
+                # Primero intentar detectar si external_reference es un order_id creado previamente
+                order_id_candidate = None
+                try:
+                    if str(external_reference).isdigit():
+                        order_id_candidate = int(external_reference)
+                except Exception:
+                    order_id_candidate = None
+
+                if order_id_candidate:
+                    logger.info(f"🔎 external_reference parecería ser order_id: {order_id_candidate}. Intentando actualizar orden pendiente...")
+                    # Buscar la orden pendiente
+                    existing_order = await db.get(Orden, order_id_candidate)
+                    if existing_order and existing_order.estado == 'Pendiente':
+                        try:
+                            # Actualizar la orden pendiente: set payment_id, cambiar estado y descontar stock
+                            existing_order.payment_id_mercadopago = str(payment_id)
+                            existing_order.estado = 'Completado'
+                            existing_order.estado_pago = 'Aprobado'
+                            existing_order.monto_total = transaction_amount
+                            # Descontar stock usando helper
+                            await update_order_stock_on_approval(db, order_id_candidate)
+                            await db.commit()
+                            logger.info(f"✅ Orden pendiente {order_id_candidate} actualizada y stock descontado (Pago {payment_id})")
+
+                            # Borrar cache asociado
+                            checkout_cache_key = f"checkout_data_order:{order_id_candidate}"
+                            await set_cache_async(checkout_cache_key, None, expire_seconds=1)
+                            logger.info(f"🧹 Cache de checkout eliminada para orden {order_id_candidate}")
+
+                            # Opcional: Enviar email de confirmación en background
+                            try:
+                                enviar_email_confirmacion_compra_task.delay(order_id_candidate)
+                            except Exception as e:
+                                logger.warning(f"No se pudo encolar email para orden {order_id_candidate}: {e}")
+
+                            return {"status": "ok", "order_id": order_id_candidate, "message": f"Orden {order_id_candidate} actualizada correctamente"}
+
+                        except Exception as e:
+                            await db.rollback()
+                            logger.error(f"❌ Error al actualizar orden pendiente {order_id_candidate} para pago {payment_id}: {e}")
+                            raise HTTPException(status_code=500, detail="Error al actualizar orden pendiente")
+
+                    else:
+                        logger.info(f"ℹ️ No se encontró orden pendiente {order_id_candidate} o no está en estado Pendiente. Se procederá a crear la orden normalmente.")
+
+                # Si no existe orden pendiente, caer al flujo original: crear una nueva orden usando los datos en cache
                 # Obtener datos del checkout desde Redis
                 checkout_cache_key = f"checkout_data:{external_reference}"
                 checkout_data = await get_cache_async(checkout_cache_key)
@@ -491,7 +589,7 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     logger.error(f"❌ No se encontraron datos del checkout para {external_reference}")
                     raise HTTPException(status_code=404, detail="Datos del checkout no encontrados")
                 
-                logger.info(f"� Datos del checkout recuperados desde Redis para {external_reference}")
+                logger.info(f"✅ Datos del checkout recuperados desde Redis para {external_reference}")
 
                 # Crear la orden con estado "Completado" Y descontar stock
                 try:
@@ -515,7 +613,10 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     logger.info(f"🧹 Datos del checkout eliminados de Redis para {external_reference}")
                     
                     # Opcional: Enviar email de confirmación
-                    # TODO: Implementar envío de email aquí si es necesario
+                    try:
+                        enviar_email_confirmacion_compra_task.delay(new_order_id)
+                    except Exception as e:
+                        logger.warning(f"No se pudo encolar email para orden {new_order_id}: {e}")
                     
                 except Exception as e:
                     await db.rollback()

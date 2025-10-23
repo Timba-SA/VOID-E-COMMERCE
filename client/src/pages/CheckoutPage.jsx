@@ -139,22 +139,43 @@ const CheckoutPage = () => {
                     email: user?.email || ''
                 };
                 
-                // --- ¡ACÁ ESTÁ LA MAGIA DEL FRONTEND! ---
-                // Ahora le pasamos el `shippingCost` a la función de la API
+                // Crear preferencia de pago
                 const preference = await createCheckoutPreference(cart, addressWithEmail, shippingCost);
-                if (preference.init_point) {
-                    console.log('🚀 Intentando abrir Mercado Pago...');
+                
+                if (preference && preference.init_point) {
+                    // Guardar order_id en sessionStorage para usarlo después
+                    if (preference.order_id) {
+                        sessionStorage.setItem('pending_order_id', preference.order_id);
+                    }
                     
-                    // Intentar abrir en la misma pestaña (siempre funciona)
-                    // Guardar el estado actual para poder reanudar después
+                    // Mostrar instrucciones si estamos en localhost (sin auto_return)
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        const returnUrl = preference.order_id 
+                            ? `${window.location.origin}/payment/success?order_id=${preference.order_id}`
+                            : `${window.location.origin}/payment/success`;
+                        
+                        const proceed = window.confirm(
+                            `⚠️ IMPORTANTE - LEE ESTO:\n\n` +
+                            `1. Vas a ser redirigido a Mercado Pago para pagar\n` +
+                            `2. Completa el pago normalmente\n` +
+                            `3. Después del pago, COPIA esta URL y pégala en tu navegador:\n\n` +
+                            `${returnUrl}\n\n` +
+                            `¿Entendido? Presiona OK para continuar al pago.`
+                        );
+                        
+                        if (!proceed) {
+                            setIsProcessing(false);
+                            return;
+                        }
+                    }
+                    
+                    // Redirigir a Mercado Pago
                     window.location.href = preference.init_point;
-                    
-                    // No hay que hacer polling ni nada más porque MP redirigirá de vuelta
                 } else {
-                    throw new Error('Could not retrieve payment starting point.');
+                    throw new Error('No se pudo obtener el link de pago de Mercado Pago');
                 }
             } catch (error) {
-                console.error('Error creating payment preference:', error);
+                console.error('Error al crear preferencia de pago:', error);
                 notify(error.message || t('checkout_error_payment'), 'error');
                 setIsProcessing(false);
             }

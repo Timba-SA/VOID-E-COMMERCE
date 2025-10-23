@@ -3,7 +3,7 @@ Script de prueba completa del flujo de reset de contraseña
 """
 import asyncio
 from services.email_service import send_password_reset_email
-from utils.security import hash_password
+from utils.security import get_password_hash
 import secrets
 
 async def test_reset_flow():

@@ -91,7 +91,7 @@ class Orden(BaseModel): # Renombrado de OrdenOut para más claridad
     monto_total: float
     estado: Optional[str]
     estado_pago: Optional[str]
-    creado_en: datetime
+    creado_en: str  # Cambiado a str porque ahora enviamos ISO string con timezone
     # Corregido para mostrar los detalles de la orden de forma prolija
     detalles: List[DetalleOrdenOut]
 
@@ -105,7 +105,7 @@ class OrdenDetallada(BaseModel):
     monto_total: float
     estado: Optional[str]
     estado_pago: Optional[str]
-    creado_en: datetime
+    creado_en: str  # Cambiado a str porque ahora enviamos ISO string con timezone
     direccion_envio: Optional[dict] = None
     metodo_pago: Optional[str] = None
     payment_id_mercadopago: Optional[str] = None

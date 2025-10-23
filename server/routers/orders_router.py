@@ -9,6 +9,7 @@ from database.database import get_db
 from database.models import Orden, DetalleOrden, VarianteProducto, Producto
 from services.auth_services import get_current_user # Usamos el servicio de usuario normal
 from schemas.user_schemas import UserOut # Para el tipado de get_current_user
+from datetime import timezone
 
 router = APIRouter(
     prefix="/api/orders",
@@ -28,6 +29,19 @@ async def get_my_orders(db: AsyncSession = Depends(get_db), current_user: UserOu
         .order_by(Orden.creado_en.desc())
     )
     orders = result.scalars().unique().all()
+
+    # Asegurar que 'creado_en' sea timezone-aware en UTC antes de serializar
+    for order in orders:
+        try:
+            if hasattr(order, 'creado_en') and order.creado_en is not None:
+                if order.creado_en.tzinfo is None:
+                    order.creado_en = order.creado_en.replace(tzinfo=timezone.utc).isoformat()
+                else:
+                    order.creado_en = order.creado_en.astimezone(timezone.utc).isoformat()
+        except Exception:
+            # No bloquear si hay un valor extraño; continuar con el siguiente
+            pass
+
     return orders
 
 
@@ -69,13 +83,25 @@ async def get_order_details(
             }
         })
     
+    # Asegurar que creado_en sea timezone-aware en UTC
+    try:
+        created = order.creado_en
+        if created is not None:
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc).isoformat()
+            else:
+                created = created.astimezone(timezone.utc).isoformat()
+    except Exception:
+        # Si algo falla, enviar el valor tal cual (podría ser ya string)
+        created = order.creado_en if isinstance(order.creado_en, str) else None
+
     return {
         "id": order.id,
         "usuario_id": order.usuario_id,
         "monto_total": float(order.monto_total),
         "estado": order.estado,
         "estado_pago": order.estado_pago,
-        "creado_en": order.creado_en,
+        "creado_en": created,
         "direccion_envio": order.direccion_envio,
         "metodo_pago": order.metodo_pago,
         "payment_id_mercadopago": order.payment_id_mercadopago,
@@ -106,5 +132,15 @@ async def get_order_by_payment_id(
     
     if not order:
         return None  # Retornamos None si no existe (aún no procesada por webhook)
+    
+    # Asegurar que creado_en sea timezone-aware en UTC antes de devolver
+    try:
+        if hasattr(order, 'creado_en') and order.creado_en is not None:
+            if order.creado_en.tzinfo is None:
+                order.creado_en = order.creado_en.replace(tzinfo=timezone.utc).isoformat()
+            else:
+                order.creado_en = order.creado_en.astimezone(timezone.utc).isoformat()
+    except Exception:
+        pass
     
     return order
