@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-from typing import List
+from typing import List, Optional
 
 from schemas import admin_schemas # Reutilizamos el schema de Orden
 from database.database import get_db
@@ -81,3 +81,30 @@ async def get_order_details(
         "payment_id_mercadopago": order.payment_id_mercadopago,
         "detalles": detalles_serializados
     }
+
+
+@router.get("/by-payment/{payment_id}", summary="Buscar orden por payment_id de Mercado Pago")
+async def get_order_by_payment_id(
+    payment_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user)
+):
+    """
+    Busca una orden específica por su payment_id de Mercado Pago.
+    Útil para obtener la orden recién procesada después de un pago.
+    Solo devuelve la orden si pertenece al usuario actual.
+    """
+    result = await db.execute(
+        select(Orden)
+        .options(joinedload(Orden.detalles))
+        .where(
+            Orden.payment_id_mercadopago == payment_id,
+            Orden.usuario_id == str(current_user.id)
+        )
+    )
+    order = result.scalars().first()
+    
+    if not order:
+        return None  # Retornamos None si no existe (aún no procesada por webhook)
+    
+    return order

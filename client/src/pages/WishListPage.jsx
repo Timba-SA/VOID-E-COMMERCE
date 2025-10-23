@@ -1,28 +1,30 @@
 // En client/src/pages/WishlistPage.jsx
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getWishlistAPI } from '../api/wishListApi';
 import ProductCard from '../components/products/ProductCard';
 import Spinner from '../components/common/Spinner';
 
 const WishlistPage = () => {
+  const { t } = useTranslation();
   const { data: wishlist, isLoading, error } = useQuery({
     queryKey: ['wishlist'],
     queryFn: getWishlistAPI
   });
 
   if (isLoading) {
-    return <Spinner message="Cargando tus favoritos..." />;
+    return <Spinner message={t('wishlist_loading', 'Cargando tus favoritos...')} />;
   }
 
   if (error) {
-    return <p className="loading-text">Error al cargar tu wishlist.</p>;
+    return <p className="loading-text">{t('wishlist_error', 'Error al cargar tu wishlist.')}</p>;
   }
 
   return (
     <main className="catalog-container">
       <div className="catalog-header">
-        <h1 className="catalog-title">Mi Wishlist</h1>
+        <h1 className="catalog-title">{t('wishlist_title', 'Mi Wishlist')}</h1>
       </div>
 
       {wishlist && wishlist.length > 0 ? (
@@ -32,7 +34,7 @@ const WishlistPage = () => {
           ))}
         </div>
       ) : (
-        <p className="loading-text">Todavía no guardaste ningún producto en tu wishlist.</p>
+        <p className="loading-text">{t('wishlist_empty', 'Todavía no guardaste ningún producto en tu wishlist.')}</p>
       )}
     </main>
   );

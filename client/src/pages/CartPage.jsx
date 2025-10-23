@@ -29,7 +29,7 @@ const CartPage = () => {
         }).format(price).replace("ARS", "$").trim();
     };
 
-    if (loading) return <main className="cart-page-container"><Spinner message="Cargando carrito..." /></main>;
+    if (loading) return <main className="cart-page-container"><Spinner message={t('cart_loading', 'Cargando carrito...')} /></main>;
 
     const subtotal = cart?.items.reduce((sum, item) => sum + item.quantity * item.price, 0) || 0;
     const orderTotal = subtotal;

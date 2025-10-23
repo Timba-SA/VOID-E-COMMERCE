@@ -109,9 +109,9 @@ const Navbar = React.forwardRef(({ isMenuOpen, onToggleMenu }, ref) => {
               
               {isSearching && query.length > 1 && (
                 <div className="search-results-dropdown">
-                  {isSearchLoading && <div className="search-result-item">Buscando...</div>}
+                  {isSearchLoading && <div className="search-result-item">{t('nav_searching', 'Buscando...')}</div>}
                   {!isSearchLoading && searchResults && searchResults.length === 0 && (
-                    <div className="search-result-item">No se encontraron resultados.</div>
+                    <div className="search-result-item">{t('nav_no_results', 'No se encontraron resultados.')}</div>
                   )}
                   {searchResults && searchResults.map(product => (
                     <Link 

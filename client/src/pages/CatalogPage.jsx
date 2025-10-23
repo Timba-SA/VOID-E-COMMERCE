@@ -159,7 +159,7 @@ const CatalogPage = () => {
                       {products.map(product => <ProductCard product={product} key={product.id} />)}
                   </div>
                 ) : (
-                    <p className="loading-text">No se encontraron productos con estos filtros.</p>
+                    <p className="loading-text">{t('catalog_no_products', 'No se encontraron productos con estos filtros.')}</p>
                 )}
 
                 <div className="pagination-controls">

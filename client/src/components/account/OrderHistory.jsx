@@ -42,17 +42,18 @@ const OrderHistory = ({ orders, loading }) => {
     };
 
     const translateStatus = (status) => {
+        const statusKey = status?.toLowerCase();
         const statusTranslations = {
-            'approved': 'Aprobado',
-            'aprobado': 'Aprobado',
-            'pending': 'Pendiente',
-            'pendiente': 'Pendiente',
-            'rejected': 'Rechazado',
-            'rechazado': 'Rechazado',
-            'cancelled': 'Cancelado',
-            'cancelado': 'Cancelado'
+            'approved': t('order_status_approved', 'Aprobado'),
+            'aprobado': t('order_status_approved', 'Aprobado'),
+            'pending': t('order_status_pending', 'Pendiente'),
+            'pendiente': t('order_status_pending', 'Pendiente'),
+            'rejected': t('order_status_rejected', 'Rechazado'),
+            'rechazado': t('order_status_rejected', 'Rechazado'),
+            'cancelled': t('order_status_cancelled', 'Cancelado'),
+            'cancelado': t('order_status_cancelled', 'Cancelado')
         };
-        return statusTranslations[status?.toLowerCase()] || status || 'N/A';
+        return statusTranslations[statusKey] || status || 'N/A';
     };
 
     const handleViewDetails = async (orderId) => {
@@ -82,22 +83,22 @@ const OrderHistory = ({ orders, loading }) => {
             setExpandedOrderId(orderId);
         } catch (error) {
             console.error('Error loading order details:', error);
-            alert('Error al cargar los detalles de la orden');
+            alert(t('order_details_error', 'Error al cargar los detalles de la orden'));
         } finally {
             setLoadingDetails(prev => ({ ...prev, [orderId]: false }));
         }
     };
 
     if (loading) {
-        return <Spinner message="Cargando historial..." />;
+        return <Spinner message={t('order_loading', 'Cargando historial...')} />;
     }
 
     if (!orders || orders.length === 0) {
         return (
             <div className="no-orders-container">
                 <div className="no-orders-content">
-                    <h3>Sin órdenes</h3>
-                    <p>Cuando realices tu primera compra, aparecerá aquí.</p>
+                    <h3>{t('order_no_orders', 'Sin órdenes')}</h3>
+                    <p>{t('order_no_orders_message', 'Cuando realices tu primera compra, aparecerá aquí.')}</p>
                 </div>
             </div>
         );
@@ -105,7 +106,7 @@ const OrderHistory = ({ orders, loading }) => {
 
     return (
         <div className="order-history-container">
-            <h2 className="order-history-title">Historial de Compras</h2>
+            <h2 className="order-history-title">{t('order_history_title', 'Historial de Compras')}</h2>
             
             <div className="orders-list">
                 {orders.map(order => {
@@ -119,7 +120,7 @@ const OrderHistory = ({ orders, loading }) => {
                             <div className="order-header">
                                 <div className="order-header-main">
                                     <div className="order-id">
-                                        <span className="order-label">ORDEN</span>
+                                        <span className="order-label">{t('order_label', 'ORDEN')}</span>
                                         <span className="order-number">#{order.id}</span>
                                     </div>
                                     <div className="order-date">
@@ -129,7 +130,7 @@ const OrderHistory = ({ orders, loading }) => {
                                 
                                 <div className="order-header-side">
                                     <div className="order-total">
-                                        <span className="total-label">Total</span>
+                                        <span className="total-label">{t('order_total_label', 'Total')}</span>
                                         <span className="total-amount">${formatPrice(order.monto_total)}</span>
                                     </div>
                                     <span className={`order-status status-${getStatusColor(order.estado_pago)}`}>
@@ -141,7 +142,7 @@ const OrderHistory = ({ orders, loading }) => {
                             {/* Info rápida */}
                             <div className="order-meta">
                                 <span className="meta-item">
-                                    <strong>{order.detalles?.length || 0}</strong> {order.detalles?.length === 1 ? 'producto' : 'productos'}
+                                    <strong>{order.detalles?.length || 0}</strong> {order.detalles?.length === 1 ? t('order_product_singular', 'producto') : t('order_product_plural', 'productos')}
                                 </span>
                                 <span className="meta-divider">•</span>
                                 <span className="meta-item">{order.metodo_pago || 'N/A'}</span>
@@ -156,11 +157,11 @@ const OrderHistory = ({ orders, loading }) => {
                                 {isLoadingDetails ? (
                                     <>
                                         <span className="btn-spinner"></span>
-                                        <span>Cargando...</span>
+                                        <span>{t('order_loading_btn', 'Cargando...')}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>{isExpanded ? 'Ocultar detalles' : 'Ver detalles'}</span>
+                                        <span>{isExpanded ? t('order_hide_details', 'Ocultar detalles') : t('order_view_details', 'Ver detalles')}</span>
                                         <svg 
                                             className={`chevron-icon ${isExpanded ? 'rotated' : ''}`} 
                                             width="16" 
@@ -179,13 +180,13 @@ const OrderHistory = ({ orders, loading }) => {
                                 <div className="order-details-panel">
                                     {/* Productos */}
                                     <div className="details-section">
-                                        <h4 className="section-title">Productos</h4>
+                                        <h4 className="section-title">{t('order_products', 'Productos')}</h4>
                                         <div className="products-grid">
                                             {details.detalles.map((item, index) => (
                                                 <div key={index} className="product-row">
                                                     <div className="product-info">
                                                         <div className="product-name">
-                                                            {item.variante_producto?.producto_nombre || 'Producto'}
+                                                            {item.variante_producto?.producto_nombre || t('order_product', 'Producto')}
                                                         </div>
                                                         <div className="product-variants">
                                                             <span className="variant-tag">
@@ -198,15 +199,15 @@ const OrderHistory = ({ orders, loading }) => {
                                                     </div>
                                                     <div className="product-pricing">
                                                         <div className="price-detail">
-                                                            <span className="price-label">Precio unitario</span>
+                                                            <span className="price-label">{t('order_unit_price', 'Precio unitario')}</span>
                                                             <span className="price-value">${formatPrice(item.precio_en_momento_compra)}</span>
                                                         </div>
                                                         <div className="price-detail">
-                                                            <span className="price-label">Cantidad</span>
+                                                            <span className="price-label">{t('order_quantity', 'Cantidad')}</span>
                                                             <span className="price-value">×{item.cantidad}</span>
                                                         </div>
                                                         <div className="price-detail subtotal">
-                                                            <span className="price-label">Subtotal</span>
+                                                            <span className="price-label">{t('order_subtotal', 'Subtotal')}</span>
                                                             <span className="price-value">${formatPrice(item.cantidad * item.precio_en_momento_compra)}</span>
                                                         </div>
                                                     </div>
@@ -217,7 +218,7 @@ const OrderHistory = ({ orders, loading }) => {
 
                                     {/* Dirección de envío */}
                                     <div className="details-section">
-                                        <h4 className="section-title">Dirección de Envío</h4>
+                                        <h4 className="section-title">{t('order_shipping_address', 'Dirección de Envío')}</h4>
                                         {details.direccion_envio ? (
                                             <div className="address-box">
                                                 <p className="address-name">
@@ -239,7 +240,7 @@ const OrderHistory = ({ orders, loading }) => {
                                         ) : (
                                             <div className="address-box">
                                                 <p style={{ color: '#737373', fontStyle: 'italic' }}>
-                                                    No hay información de dirección registrada para esta orden.
+                                                    {t('order_no_address', 'No hay información de dirección registrada para esta orden.')}
                                                 </p>
                                             </div>
                                         )}
@@ -247,26 +248,26 @@ const OrderHistory = ({ orders, loading }) => {
 
                                     {/* Resumen de pago */}
                                     <div className="details-section">
-                                        <h4 className="section-title">Información de Pago</h4>
+                                        <h4 className="section-title">{t('order_payment_info', 'Información de Pago')}</h4>
                                         <div className="payment-info">
                                             <div className="info-row">
-                                                <span className="info-label">Estado</span>
+                                                <span className="info-label">{t('order_status', 'Estado')}</span>
                                                 <span className={`info-value status-${getStatusColor(details.estado_pago)}`}>
                                                     {translateStatus(details.estado_pago)}
                                                 </span>
                                             </div>
                                             <div className="info-row">
-                                                <span className="info-label">Método</span>
+                                                <span className="info-label">{t('order_payment_method', 'Método')}</span>
                                                 <span className="info-value">{details.metodo_pago || 'N/A'}</span>
                                             </div>
                                             {details.payment_id_mercadopago && (
                                                 <div className="info-row">
-                                                    <span className="info-label">ID de Pago</span>
+                                                    <span className="info-label">{t('order_payment_id', 'ID de Pago')}</span>
                                                     <span className="info-value payment-id">{details.payment_id_mercadopago}</span>
                                                 </div>
                                             )}
                                             <div className="info-row total-row">
-                                                <span className="info-label">Total Pagado</span>
+                                                <span className="info-label">{t('order_total_paid', 'Total Pagado')}</span>
                                                 <span className="info-value total-value">${formatPrice(details.monto_total)}</span>
                                             </div>
                                         </div>

@@ -29,3 +29,19 @@ export const getOrderDetailsAPI = async (orderId) => {
     throw error.response?.data || error;
   }
 };
+
+/**
+ * Busca una orden por su payment_id de Mercado Pago.
+ * Útil para obtener la orden recién procesada después de un pago.
+ * @param {string} paymentId - ID del pago de Mercado Pago
+ * @returns {Promise<Object|null>} La orden si existe, null si aún no ha sido procesada
+ */
+export const getOrderByPaymentIdAPI = async (paymentId) => {
+  try {
+    const response = await axiosClient.get(`/orders/by-payment/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching order by payment ID:', error.response?.data?.detail || error.message);
+    throw error.response?.data || error;
+  }
+};

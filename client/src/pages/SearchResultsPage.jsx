@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getProducts } from '../api/productsApi';
 import Spinner from '../components/common/Spinner';
 
 const SearchResultsPage = () => {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q');
 
@@ -25,7 +27,7 @@ const SearchResultsPage = () => {
                 const data = await getProducts({ q: query, limit: 100 });
                 setProducts(data);
             } catch (err) {
-                setError('Error searching for products.');
+                setError(t('search_error', 'Error al buscar productos.'));
             }
             setLoading(false);
         };
@@ -43,14 +45,14 @@ const SearchResultsPage = () => {
     return (
         <main className="catalog-container">
             <div className="catalog-header">
-                <h1 className="catalog-title">Results for: "{query}"</h1>
+                <h1 className="catalog-title">{t('search_results_for', 'Resultados para')}: "{query}"</h1>
             </div>
 
-            {loading && <Spinner message="Searching..." />}
+            {loading && <Spinner message={t('search_loading', 'Buscando...')} />}
             {error && <p className="loading-text">{error}</p>}
             
             {!loading && !error && products?.length === 0 && (
-                <p className="loading-text">No products were found for your search.</p>
+                <p className="loading-text">{t('search_no_results', 'No se encontraron productos para tu búsqueda.')}</p>
             )}
 
             {products && products.length > 0 && (
