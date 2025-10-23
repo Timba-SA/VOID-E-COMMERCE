@@ -1898,23 +1898,6 @@ main {
 /* =================================================================== */
 /* ESTILOS PARA LA HOME CON IMAGENES SOLAS
 /* =================================================================== */
-
-.product-grid-home {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4rem;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.product-link-image-only {
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 3 / 4;
-  background-color: #f8f8f8;
-}
-
-/* =================================================================== */
 /* ESTILOS PARA LA HOME CON IMAGENES SOLAS (VERSIÓN FINAL)
 /* =================================================================== */
 
@@ -1936,7 +1919,7 @@ main {
 .product-grid-home .product-image-home {
   width: 100%;
   height: auto; /* <-- Dejamos que la altura sea automática */
-  object-fit: contain;
+  object-fit: cover;
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
