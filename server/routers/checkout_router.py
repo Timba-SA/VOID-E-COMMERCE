@@ -24,7 +24,7 @@ FRONTEND_URL = settings.FRONTEND_URL #
 BACKEND_URL = settings.BACKEND_URL #
 
 # ==============================================================================
-# Función save_order_and_update_stock (SIN CAMBIOS RESPECTO A TU ORIGINAL)
+# Función save_order_and_update_stock (CON SOPORTE PARA ÓRDENES PENDIENTES)
 # ==============================================================================
 async def save_order_and_update_stock(
     db: AsyncSession,
@@ -34,20 +34,33 @@ async def save_order_and_update_stock(
     items_comprados: list,
     metodo_pago: str,
     payer_email: str, # <-- Agregamos el email aquí por si lo necesitamos loguear
-    shipping_address: dict = None
+    shipping_address: dict = None,
+    pending_payment: bool = False  # Nuevo parámetro para indicar si es una orden pendiente
 ):
     """
     Función transaccional para guardar la orden y actualizar el stock.
+    Si pending_payment=True, crea la orden con estado 'Pendiente' SIN descontar stock.
+    Si pending_payment=False, procesa la orden normalmente con descuento de stock.
     O todo se ejecuta con éxito (COMMIT), o nada se guarda (ROLLBACK).
     Retorna el ID de la nueva orden creada.
     """
     new_order_id = None
     try:
+        # Determinar estados según si es pago pendiente o confirmado
+        if pending_payment:
+            estado = "Pendiente"
+            estado_pago = "Pendiente"
+            logger.info(f"📝 Creando orden PENDIENTE (sin descuento de stock)")
+        else:
+            estado = "Completado"
+            estado_pago = "Aprobado"
+            logger.info(f"✅ Creando orden COMPLETADA (con descuento de stock)")
+        
         new_order = Orden( #
             usuario_id=usuario_id,
             monto_total=monto_total,
-            estado="Completado",
-            estado_pago="Aprobado",
+            estado=estado,
+            estado_pago=estado_pago,
             metodo_pago=metodo_pago,
             payment_id_mercadopago=payment_id,
             direccion_envio=shipping_address
@@ -55,7 +68,7 @@ async def save_order_and_update_stock(
         db.add(new_order)
         await db.flush()
         new_order_id = new_order.id
-        logger.info(f"💾 Orden {new_order_id} creada en memoria. Procesando detalles y stock...")
+        logger.info(f"💾 Orden {new_order_id} creada en memoria. Estado: {estado}. Procesando detalles{'...' if not pending_payment else ' (sin stock)...'}")
 
 
         for item in items_comprados:
@@ -107,25 +120,79 @@ async def save_order_and_update_stock(
                 precio_en_momento_compra=precio_unitario
             ))
 
-            variante_producto = await db.get(VarianteProducto, variante_id, with_for_update=True) #
+            # SOLO descontar stock si NO es una orden pendiente
+            if not pending_payment:
+                variante_producto = await db.get(VarianteProducto, variante_id, with_for_update=True) #
 
-            if not variante_producto:
-                logger.error(f"CRÍTICO [Orden {new_order_id}]: Variante ID {variante_id} no encontrada.")
-                raise Exception(f"Variante de producto ID {variante_id} no encontrada.")
+                if not variante_producto:
+                    logger.error(f"CRÍTICO [Orden {new_order_id}]: Variante ID {variante_id} no encontrada.")
+                    raise Exception(f"Variante de producto ID {variante_id} no encontrada.")
 
-            if variante_producto.cantidad_en_stock < cantidad_comprada:
-                logger.error(f"CRÍTICO [Orden {new_order_id}]: Stock insuficiente para variante ID {variante_id}. Stock: {variante_producto.cantidad_en_stock}, Pedido: {cantidad_comprada}")
-                raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
+                if variante_producto.cantidad_en_stock < cantidad_comprada:
+                    logger.error(f"CRÍTICO [Orden {new_order_id}]: Stock insuficiente para variante ID {variante_id}. Stock: {variante_producto.cantidad_en_stock}, Pedido: {cantidad_comprada}")
+                    raise Exception(f"Stock insuficiente para la variante ID {variante_id}")
 
-            variante_producto.cantidad_en_stock -= cantidad_comprada
-            logger.info(f"📉 [Orden {new_order_id}] Stock actualizado para variante ID {variante_id}. Nuevo stock: {variante_producto.cantidad_en_stock}")
+                variante_producto.cantidad_en_stock -= cantidad_comprada
+                logger.info(f"📉 [Orden {new_order_id}] Stock actualizado para variante ID {variante_id}. Nuevo stock: {variante_producto.cantidad_en_stock}")
+            else:
+                # Solo verificar que exista el producto, sin descontar stock
+                variante_producto = await db.get(VarianteProducto, variante_id) #
+                if not variante_producto:
+                    logger.error(f"CRÍTICO [Orden {new_order_id}]: Variante ID {variante_id} no encontrada.")
+                    raise Exception(f"Variante de producto ID {variante_id} no encontrada.")
+                logger.info(f"✓ [Orden {new_order_id}] Variante ID {variante_id} verificada (stock no descontado)")
 
-        logger.info(f"✅ Detalles y stock actualizados correctamente para Orden {new_order_id}.")
+        if pending_payment:
+            logger.info(f"✅ Orden PENDIENTE {new_order_id} creada correctamente (stock NO descontado).")
+        else:
+            logger.info(f"✅ Detalles y stock actualizados correctamente para Orden {new_order_id}.")
+        
         return new_order_id
 
     except Exception as e:
         logger.error(f"💥 Error CRÍTICO durante la transacción save_order_and_update_stock (Orden {new_order_id}): {e}", exc_info=True)
         raise e # Re-lanzamos la excepción para que el webhook haga rollback
+
+# ==============================================================================
+# Función para descontar stock de una orden pendiente cuando se aprueba el pago
+# ==============================================================================
+async def update_order_stock_on_approval(db: AsyncSession, order_id: int):
+    """
+    Descuenta el stock de los productos de una orden cuando el pago es aprobado.
+    Debe llamarse desde el webhook cuando el pago está 'approved'.
+    """
+    try:
+        # Obtener los detalles de la orden
+        result = await db.execute(
+            select(DetalleOrden).filter(DetalleOrden.orden_id == order_id)
+        )
+        detalles = result.scalars().all()
+        
+        if not detalles:
+            logger.warning(f"⚠️ No se encontraron detalles para la orden {order_id}")
+            return
+        
+        logger.info(f"📦 Descontando stock para orden {order_id} (pago aprobado)")
+        
+        for detalle in detalles:
+            variante_producto = await db.get(VarianteProducto, detalle.variante_producto_id, with_for_update=True)
+            
+            if not variante_producto:
+                logger.error(f"❌ Variante ID {detalle.variante_producto_id} no encontrada para orden {order_id}")
+                raise Exception(f"Variante de producto ID {detalle.variante_producto_id} no encontrada.")
+            
+            if variante_producto.cantidad_en_stock < detalle.cantidad:
+                logger.error(f"❌ Stock insuficiente para variante ID {detalle.variante_producto_id}. Stock: {variante_producto.cantidad_en_stock}, Pedido: {detalle.cantidad}")
+                raise Exception(f"Stock insuficiente para la variante ID {detalle.variante_producto_id}")
+            
+            variante_producto.cantidad_en_stock -= detalle.cantidad
+            logger.info(f"📉 Stock actualizado para variante ID {detalle.variante_producto_id}. Nuevo stock: {variante_producto.cantidad_en_stock}")
+        
+        logger.info(f"✅ Stock descontado correctamente para orden {order_id}")
+        
+    except Exception as e:
+        logger.error(f"💥 Error al descontar stock para orden {order_id}: {e}", exc_info=True)
+        raise e
 
 # ==============================================================================
 # Función create_preference (CON LA LÍNEA ARREGLADA)
@@ -189,14 +256,14 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
         })
         total_amount_calculated += shipping_cost_float
 
-    # Referencia externa (igual que tu código original)
+    # Referencia externa
     external_reference = str(cart.user_id or cart.guest_session_id or "guest")
     
-    # --- NUEVA LÓGICA: CREAR ORDEN ANTES DEL PAGO ---
-    # Esto asegura que la orden exista aunque el webhook no se ejecute (localhost)
-    logger.info(f"📝 Creando orden pendiente ANTES del pago para usuario {external_reference}...")
+    # --- GUARDAR DATOS EN REDIS PARA EL WEBHOOK ---
+    # NO crear la orden ahora - el webhook la creará cuando el pago sea exitoso
+    logger.info(f"� Guardando datos del checkout en Redis para {external_reference}...")
     
-    # Preparar items para la orden
+    # Preparar items para la orden (se usarán en el webhook)
     items_para_orden = []
     for item in cart.items:
         variant = await db.get(VarianteProducto, item.variante_id)
@@ -225,34 +292,18 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
         "comments": address.comments if hasattr(address, 'comments') else None,
     }
     
-    # Crear la orden con estado "pending" (pendiente de pago)
-    try:
-        new_order_id = await save_order_and_update_stock(
-            db=db,
-            usuario_id=external_reference,
-            monto_total=total_amount_calculated,
-            payment_id=None,  # NULL - se actualizará cuando se procese el pago
-            items_comprados=items_para_orden,
-            metodo_pago="Mercado Pago",
-            payer_email=address.email if hasattr(address, 'email') else None,
-            shipping_address=shipping_address_dict
-        )
-        await db.commit()
-        logger.info(f"✅ Orden {new_order_id} creada con estado PENDIENTE antes del pago")
-    except Exception as e:
-        await db.rollback()
-        logger.error(f"❌ Error al crear orden pendiente: {e}")
-        raise HTTPException(status_code=500, detail="Error al crear la orden")
-
-    # --- GUARDAR DIRECCIÓN EN REDIS PARA RECUPERARLA EN EL WEBHOOK ---
-    address_cache_key = f"checkout_address:{external_reference}"
-    await set_cache_async(address_cache_key, shipping_address_dict, expire_seconds=3600)
-    logger.info(f"📍 Dirección guardada en Redis para {external_reference}")
+    # Guardar todos los datos del checkout en Redis (1 hora de expiración)
+    checkout_data = {
+        "usuario_id": external_reference,
+        "items": items_para_orden,
+        "shipping_address": shipping_address_dict,
+        "total_amount": total_amount_calculated,
+        "payer_email": address.email if hasattr(address, 'email') else None
+    }
     
-    # Guardar también el order_id para asociarlo al payment_id después
-    order_cache_key = f"pending_order:{external_reference}"
-    await set_cache_async(order_cache_key, {"order_id": new_order_id}, expire_seconds=3600)
-    logger.info(f"🔗 Order ID {new_order_id} guardado en Redis para {external_reference}")
+    checkout_cache_key = f"checkout_data:{external_reference}"
+    await set_cache_async(checkout_cache_key, checkout_data, expire_seconds=3600)
+    logger.info(f"✅ Datos del checkout guardados en Redis para {external_reference}")
 
     # Datos del pagador (igual que tu código original, asegurando string en phone)
     # IMPORTANTE: Asegúrate que el objeto 'address' que llega del frontend TENGA todos estos campos.
@@ -277,30 +328,27 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
     }
 
     # Armado de preference_data
-    # IMPORTANTE: auto_return solo funciona con HTTPS (no con localhost HTTP)
-    # Por eso solo lo activamos si la URL del frontend es HTTPS
-    # Ahora usamos el order_id en la external_reference para poder actualizar la orden
     preference_data = {
         "items": items_for_preference,
         "payer": payer_data,
         "back_urls": {
-            "success": f"{FRONTEND_URL.rstrip('/')}/payment/success?order_id={new_order_id}",
+            "success": f"{FRONTEND_URL.rstrip('/')}/payment/success",
             "failure": f"{FRONTEND_URL.rstrip('/')}/payment/failure",
             "pending": f"{FRONTEND_URL.rstrip('/')}/payment/pending",
         },
         "notification_url": f"{BACKEND_URL}/api/checkout/webhook",
-        "external_reference": f"{external_reference}:{new_order_id}",  # Incluimos order_id
+        "external_reference": external_reference,  # Solo el usuario_id
         "statement_descriptor": "VOID E-COMMERCE",
     }
     
-    # Solo agregar auto_return y binary_mode si estamos en HTTPS (producción)
-    # En localhost (HTTP), Mercado Pago rechaza auto_return con error 400
+    # Solo agregar auto_return y binary_mode en PRODUCCIÓN (HTTPS)
+    # En localhost (HTTP), MP rechaza auto_return con error 400
     if FRONTEND_URL.startswith("https://"):
         preference_data["auto_return"] = "approved"  # Redirección automática en producción
         preference_data["binary_mode"] = True  # Estados binarios (approved/rejected)
-        logger.info(f"🔒 HTTPS detectado - auto_return y binary_mode activados")
+        logger.info(f"🔒 HTTPS detectado - auto_return='approved' y binary_mode activados")
     else:
-        logger.info(f"🏠 HTTP/localhost detectado - auto_return desactivado (requiere HTTPS)")
+        logger.info(f"🏠 HTTP/localhost detectado - auto_return desactivado (MP requiere HTTPS)")
 
     logger.info(f"📦 Creando preferencia MP para {external_reference}. Total: {total_amount_calculated:.2f} ARS")
     # logger.debug(f"Payload MP: {preference_data}")
@@ -362,13 +410,28 @@ async def webhook_test():
 async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     payment_id = None
     try:
-        data = await request.json()
-        logger.info(f"🔔 Webhook MP: Type={data.get('type')}, Action={data.get('action')}, DataID={data.get('data', {}).get('id')}")
+        # Mercado Pago puede enviar datos en el body (JSON) o en query params
+        # Intentar leer del body primero
+        data = {}
+        try:
+            data = await request.json()
+        except:
+            # Si falla, no hay JSON en el body
+            pass
+        
+        # También leer los query parameters
+        query_params = dict(request.query_params)
+        
+        # Determinar el tipo de notificación
+        notification_type = data.get('type') or query_params.get('topic')
+        notification_id = data.get('data', {}).get('id') or query_params.get('id') or query_params.get('data.id')
+        
+        logger.info(f"🔔 Webhook MP: Type={notification_type}, DataID={notification_id}, QueryParams={query_params}")
 
-        if data.get("type") == "payment":
-            payment_id_str = data.get('data', {}).get('id')
-            if not payment_id_str or not payment_id_str.isdigit():
-                logger.warning(f"⚠️ Webhook 'payment' sin ID válido. Data: {data}")
+        if notification_type == "payment":
+            payment_id_str = notification_id
+            if not payment_id_str or not str(payment_id_str).isdigit():
+                logger.warning(f"⚠️ Webhook 'payment' sin ID válido. Data: {data}, Params: {query_params}")
                 return {"status": "ok", "reason": "Payment ID inválido"}
 
             payment_id = int(payment_id_str)
@@ -407,7 +470,7 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
 
             # 3. Procesar SOLO si está APROBADO
             if payment_info.get("status") == "approved":
-                logger.info(f"✅ Pago {payment_id} aprobado. Actualizando orden existente...")
+                logger.info(f"✅ Pago {payment_id} aprobado. Creando orden...")
 
                 external_reference = payment_info.get("external_reference")
                 transaction_amount = payment_info.get("transaction_amount")
@@ -420,61 +483,52 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     logger.error(f"❌ CRÍTICO [Pago {payment_id}]: Falta transaction_amount.")
                     raise HTTPException(status_code=400, detail=f"Falta transaction_amount para {payment_id}")
 
-                # Extraer order_id del external_reference (formato: "user_id:order_id")
-                try:
-                    parts = external_reference.split(":")
-                    if len(parts) == 2:
-                        order_id = int(parts[1])
-                    else:
-                        # Fallback: buscar en Redis
-                        order_cache_key = f"pending_order:{parts[0]}"
-                        cached_order = await get_cache_async(order_cache_key)
-                        if cached_order and cached_order.get("order_id"):
-                            order_id = cached_order["order_id"]
-                        else:
-                            logger.error(f"❌ No se pudo obtener order_id de external_reference: {external_reference}")
-                            raise ValueError("Order ID no encontrado")
-                    
-                    logger.info(f"🔗 Orden ID extraído: {order_id}")
-                except Exception as e:
-                    logger.error(f"❌ Error al extraer order_id: {e}")
-                    raise HTTPException(status_code=400, detail="Error al procesar external_reference")
-
-                # Buscar la orden existente
-                order_result = await db.execute(
-                    select(Orden).filter(Orden.id == order_id)
-                )
-                existing_order = order_result.scalars().first()
-
-                if not existing_order:
-                    logger.error(f"❌ Orden {order_id} no encontrada en la base de datos")
-                    raise HTTPException(status_code=404, detail=f"Orden {order_id} no encontrada")
-
-                # Actualizar la orden con los datos del pago
-                existing_order.payment_id_mercadopago = str(payment_id)
-                existing_order.estado_pago = "Aprobado"
-                existing_order.estado = "Procesando"  # Cambiar estado de la orden
-                existing_order.monto_total = transaction_amount  # Actualizar con el monto real de MP
+                # Obtener datos del checkout desde Redis
+                checkout_cache_key = f"checkout_data:{external_reference}"
+                checkout_data = await get_cache_async(checkout_cache_key)
                 
+                if not checkout_data:
+                    logger.error(f"❌ No se encontraron datos del checkout para {external_reference}")
+                    raise HTTPException(status_code=404, detail="Datos del checkout no encontrados")
+                
+                logger.info(f"� Datos del checkout recuperados desde Redis para {external_reference}")
+
+                # Crear la orden con estado "Completado" Y descontar stock
                 try:
+                    new_order_id = await save_order_and_update_stock(
+                        db=db,
+                        usuario_id=checkout_data.get("usuario_id"),
+                        monto_total=transaction_amount,  # Usar monto real de MP
+                        payment_id=str(payment_id),
+                        items_comprados=checkout_data.get("items"),
+                        metodo_pago="Mercado Pago",
+                        payer_email=checkout_data.get("payer_email"),
+                        shipping_address=checkout_data.get("shipping_address"),
+                        pending_payment=False  # Crear orden completada Y descontar stock
+                    )
+                    
                     await db.commit()
-                    logger.info(f"✅ Orden {order_id} actualizada con Payment ID {payment_id}")
+                    logger.info(f"✅ Orden {new_order_id} creada exitosamente con Payment ID {payment_id} y stock descontado")
+                    
+                    # Limpiar datos del checkout de Redis
+                    await set_cache_async(checkout_cache_key, None, expire_seconds=1)
+                    logger.info(f"🧹 Datos del checkout eliminados de Redis para {external_reference}")
                     
                     # Opcional: Enviar email de confirmación
                     # TODO: Implementar envío de email aquí si es necesario
                     
                 except Exception as e:
                     await db.rollback()
-                    logger.error(f"❌ Error al actualizar orden {order_id}: {e}")
-                    raise HTTPException(status_code=500, detail="Error al actualizar orden")
+                    logger.error(f"❌ Error al crear orden para pago {payment_id}: {e}")
+                    raise HTTPException(status_code=500, detail="Error al crear orden")
 
-                return {"status": "ok", "order_id": order_id, "message": f"Orden {order_id} actualizada correctamente"}
+                return {"status": "ok", "order_id": new_order_id, "message": f"Orden {new_order_id} creada correctamente"}
 
             else:
                 logger.info(f"ℹ️ Pago {payment_id} estado '{payment_info.get('status')}'. No se procesa.")
 
         else:
-            logger.info(f"ℹ️ Webhook tipo '{data.get('type')}' ignorado.")
+            logger.info(f"ℹ️ Webhook tipo '{notification_type}' ignorado.")
 
         logger.info(f"✅ Webhook procesado/ignorado. Respondiendo 200 OK. (Ref Pago: {payment_id if payment_id else 'N/A'})")
         return {"status": "ok"}

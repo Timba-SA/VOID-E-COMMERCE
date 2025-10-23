@@ -7,6 +7,7 @@ import { CartContext } from '../context/CartContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { createCheckoutPreference } from '../api/checkoutApi';
 import { getAddressesAPI, addAddressAPI } from '../api/userApi';
+import { getMyOrdersAPI } from '../api/ordersApi';
 import { useAuthStore } from '../stores/useAuthStore';
 import Spinner from '../components/common/Spinner';
 import { countryPrefixes } from '../utils/countryPrefixes';
@@ -142,31 +143,13 @@ const CheckoutPage = () => {
                 // Ahora le pasamos el `shippingCost` a la función de la API
                 const preference = await createCheckoutPreference(cart, addressWithEmail, shippingCost);
                 if (preference.init_point) {
-                    console.log('🚀 Abriendo Mercado Pago en nueva pestaña...');
+                    console.log('🚀 Intentando abrir Mercado Pago...');
                     
-                    // Crear un enlace temporal para abrir en nueva pestaña (NO bloqueado por navegadores)
-                    const link = document.createElement('a');
-                    link.href = preference.init_point;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
+                    // Intentar abrir en la misma pestaña (siempre funciona)
+                    // Guardar el estado actual para poder reanudar después
+                    window.location.href = preference.init_point;
                     
-                    // Agregar al DOM temporalmente (requerido en algunos navegadores)
-                    document.body.appendChild(link);
-                    
-                    // Hacer clic programáticamente
-                    link.click();
-                    
-                    // Limpiar
-                    document.body.removeChild(link);
-                    
-                    // Notificar al usuario
-                    notify(t('checkout_redirecting_to_payment', 'Mercado Pago abierto en nueva pestaña'), 'success');
-                    console.log('✅ Mercado Pago abierto en nueva pestaña');
-                    
-                    // Redirigir a página de espera después de 2 segundos
-                    setTimeout(() => {
-                        navigate('/payment/success?status=pending&from=checkout');
-                    }, 2000);
+                    // No hay que hacer polling ni nada más porque MP redirigirá de vuelta
                 } else {
                     throw new Error('Could not retrieve payment starting point.');
                 }
