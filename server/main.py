@@ -55,45 +55,46 @@ if settings.SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- ACÁ EMPIEZAN LOS CAMBIOS ---
-    print("DEBUG: Iniciando lifespan...") # <-- AGREGADO
-    
-    database.setup_database_engine()
-    print(f"DEBUG: Engine SQL configurado. Intentando conectar a URL: {database.SQLALCHEMY_DATABASE_URL}") # <-- AGREGADO (Usa la variable de tu módulo database)
+    print("DEBUG: Iniciando lifespan...")
 
-    # --- Prueba de Conexión SQL (La que está fallando) ---
+    # --- Configuración y Prueba de Conexión SQL (Supabase) ---
     try:
-        print(f"DEBUG: Probando conexión inicial a SQL...") # <-- AGREGADO
-        # Esta es la línea crítica donde falla según tus logs
-        async with database.engine.begin() as conn:
-            print("✅ Conexión inicial a SQL exitosa. Intentando crear tablas (run_sync)...") # <-- AGREGADO
-            await conn.run_sync(Base.metadata.create_all)
-            print("✅ Tablas SQL verificadas/creadas (run_sync).") # <-- AGREGADO
-    except Exception as e:
-        # Este print te dirá el error exacto si falla la conexión o create_all
-        print(f"🔥 Error en conexión SQL inicial o create_all (lifespan): {e}") # <-- AGREGADO (o asegurate de que esté)
+        # Llama a la función que configura el engine (esta imprimirá la URL desde database.py)
+        database.setup_database_engine()
+        print(f"DEBUG: Engine SQL configurado. Probando conexión inicial...")
 
-    print("DEBUG: Intentando ejecutar seed_initial_data()...") # <-- AGREGADO
+        # Intenta la conexión y la creación de tablas (o verificación)
+        async with database.engine.begin() as conn:
+            print("✅ Conexión inicial a SQL exitosa. Intentando run_sync(Base.metadata.create_all)...")
+            await conn.run_sync(Base.metadata.create_all)
+            print("✅ Tablas SQL verificadas/creadas (run_sync).")
+
+    except Exception as e:
+        # Si falla la configuración, la conexión o create_all, imprimirá el error aquí
+        print(f"🔥 Error CRÍTICO en conexión SQL inicial o setup/create_all (lifespan): {e}")
+    print("DEBUG: Intentando ejecutar seed_initial_data()...")
     try:
         await seed_initial_data()
-        print("✅ seed_initial_data() ejecutado.") # <-- AGREGADO
+        print("✅ seed_initial_data() ejecutado (o ya existían datos).")
     except Exception as e:
-        print(f"🔥 Error durante seed_initial_data(): {e}") # <-- AGREGADO
+        # Captura errores específicos del seeding si los hubiera
+        print(f"🔥 Error durante seed_initial_data(): {e}")
 
-    # --- La app corre ---
+
+    # --- La aplicación se ejecuta ---
     yield
 
-    # --- Limpieza al cerrar ---
-    print("DEBUG: Cerrando lifespan...") # <-- AGREGADO
-    if hasattr(app.state, 'mongo_client'): # Si usaste Mongo
+
+    # --- Limpieza al cerrar la aplicación ---
+    print("DEBUG: Cerrando lifespan...")
+    if hasattr(app.state, 'mongo_client'): # Si inicializaste Mongo
         app.state.mongo_client.close()
         print("🔌 Conexión con MongoDB cerrada.")
 
-    # El dispose del engine SQL
-    if database.engine: # Chequea si existe el engine antes de cerrar
-        print("DEBUG: Intentando cerrar conexiones SQL (engine.dispose)...") # <-- AGREGADO
-        await database.engine.dispose()
-        print("🔌 Conexión SQL (engine) cerrada.") # <-- AGREGADO
+    if database.engine: # Si el engine SQL se inicializó
+        print("DEBUG: Intentando cerrar conexiones SQL (engine.dispose)...")
+        await database.engine.dispose() # Cierra las conexiones del pool
+        print("🔌 Conexiones SQL (engine) cerradas.")
 
 app = FastAPI(
     title="VOID Backend - Optimizado",
@@ -110,8 +111,8 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = [
-    "https://void-frontend-g0hf.onrender.com", # El dominio de tu frontend en producción
-    "http://localhost:5173",                 # El dominio de tu frontend para desarrollo local
+    "https://dominiodemelli.live/", # El dominio de tu frontend en producción
+    "http://localhost:5173",        # El dominio de tu frontend para desarrollo local
 ]
 
 app.add_middleware(
