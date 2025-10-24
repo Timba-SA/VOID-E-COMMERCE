@@ -36,9 +36,20 @@ def setup_database_engine():
         print(db_url) # Imprimir la URL en una línea separada
 
         try:
+            # Configuración especial para Supabase Connection Pooler
+            # Si usas el pooler (puerto 6543), necesitas desactivar prepared statements
+            connect_args = {}
+            if ":6543" in db_url:  # Detectar si estamos usando el Connection Pooler
+                logger.info("🔌 Connection Pooler detectado (puerto 6543) - desactivando prepared statements")
+                connect_args = {
+                    "prepared_statement_cache_size": 0,
+                    "statement_cache_size": 0
+                }
+            
             engine = create_async_engine(
-                db_url, # Usa la variable local correcta
-                poolclass=NullPool
+                db_url,
+                poolclass=NullPool,
+                connect_args=connect_args
             )
 
             AsyncSessionLocal = async_sessionmaker(
