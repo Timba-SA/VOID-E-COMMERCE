@@ -38,7 +38,7 @@ def setup_database_engine():
         try:
             engine = create_async_engine(
                 db_url, # Usa la variable local correcta
-                poolclass=NullPool
+                # poolclass=NullPool
             )
 
             AsyncSessionLocal = async_sessionmaker(
