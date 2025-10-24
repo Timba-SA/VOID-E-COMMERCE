@@ -55,15 +55,45 @@ if settings.SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    database.setup_database_engine()  # <--- LLAMADA CRÍTICA
-    async with database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # --- ACÁ EMPIEZAN LOS CAMBIOS ---
+    print("DEBUG: Iniciando lifespan...") # <-- AGREGADO
     
-    await seed_initial_data()
-    
+    database.setup_database_engine()
+    print(f"DEBUG: Engine SQL configurado. Intentando conectar a URL: {database.SQLALCHEMY_DATABASE_URL}") # <-- AGREGADO (Usa la variable de tu módulo database)
+
+    # --- Prueba de Conexión SQL (La que está fallando) ---
+    try:
+        print(f"DEBUG: Probando conexión inicial a SQL...") # <-- AGREGADO
+        # Esta es la línea crítica donde falla según tus logs
+        async with database.engine.begin() as conn:
+            print("✅ Conexión inicial a SQL exitosa. Intentando crear tablas (run_sync)...") # <-- AGREGADO
+            await conn.run_sync(Base.metadata.create_all)
+            print("✅ Tablas SQL verificadas/creadas (run_sync).") # <-- AGREGADO
+    except Exception as e:
+        # Este print te dirá el error exacto si falla la conexión o create_all
+        print(f"🔥 Error en conexión SQL inicial o create_all (lifespan): {e}") # <-- AGREGADO (o asegurate de que esté)
+
+    print("DEBUG: Intentando ejecutar seed_initial_data()...") # <-- AGREGADO
+    try:
+        await seed_initial_data()
+        print("✅ seed_initial_data() ejecutado.") # <-- AGREGADO
+    except Exception as e:
+        print(f"🔥 Error durante seed_initial_data(): {e}") # <-- AGREGADO
+
+    # --- La app corre ---
     yield
-    await database.engine.dispose()
-# --- FIN DE LA MAGIA ---
+
+    # --- Limpieza al cerrar ---
+    print("DEBUG: Cerrando lifespan...") # <-- AGREGADO
+    if hasattr(app.state, 'mongo_client'): # Si usaste Mongo
+        app.state.mongo_client.close()
+        print("🔌 Conexión con MongoDB cerrada.")
+
+    # El dispose del engine SQL
+    if database.engine: # Chequea si existe el engine antes de cerrar
+        print("DEBUG: Intentando cerrar conexiones SQL (engine.dispose)...") # <-- AGREGADO
+        await database.engine.dispose()
+        print("🔌 Conexión SQL (engine) cerrada.") # <-- AGREGADO
 
 app = FastAPI(
     title="VOID Backend - Optimizado",

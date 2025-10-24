@@ -26,7 +26,7 @@ def setup_database_engine():
     if engine is None:
         DATABASE_URL = settings.DB_SQL_URI
         logger.info(f"Configurando motor de DB para el proceso PID: {os.getpid()}")
-        
+        print(f"DEBUG: Intentando conectar a SQL con URL: {SQLALCHEMY_DATABASE_URL}") # <--- AGREGÁ ESTA LÍNEA
         # --- ¡¡¡ESTE ES EL ARREGLO!!! ---
         engine = create_async_engine(
             DATABASE_URL,
