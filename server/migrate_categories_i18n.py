@@ -12,24 +12,38 @@ from sqlalchemy import select
 CATEGORY_TRANSLATIONS = {
     "Remeras": {"es": "Remeras", "en": "T-shirts"},
     "T-shirts": {"es": "Remeras", "en": "T-shirts"},
+    "remeras": {"es": "Remeras", "en": "T-shirts"},
+    "shirts": {"es": "Remeras", "en": "Shirts"},  # ⭐ AGREGADO
+    "Shirts": {"es": "Remeras", "en": "Shirts"},  # ⭐ AGREGADO
     "Buzos": {"es": "Buzos", "en": "Hoodies"},
     "Hoodies": {"es": "Buzos", "en": "Hoodies"},
+    "hoodies": {"es": "Buzos", "en": "Hoodies"},
     "Camperas": {"es": "Camperas", "en": "Jackets"},
     "Jackets": {"es": "Camperas", "en": "Jackets"},
+    "jackets": {"es": "Camperas", "en": "Jackets"},
+    "camperas": {"es": "Camperas", "en": "Jackets"},
     "Pantalones": {"es": "Pantalones", "en": "Pants"},
     "Pants": {"es": "Pantalones", "en": "Pants"},
+    "pants": {"es": "Pantalones", "en": "Pants"},
+    "pantalones": {"es": "Pantalones", "en": "Pants"},
     "Jeans": {"es": "Jeans", "en": "Jeans"},
     "Shorts": {"es": "Shorts", "en": "Shorts"},
+    "shorts": {"es": "Shorts", "en": "Shorts"},
     "Vestidos": {"es": "Vestidos", "en": "Dresses"},
     "Dresses": {"es": "Vestidos", "en": "Dresses"},
+    "vestidos": {"es": "Vestidos", "en": "Dresses"},
     "Polleras": {"es": "Polleras", "en": "Skirts"},
     "Skirts": {"es": "Polleras", "en": "Skirts"},
     "Bolsos": {"es": "Bolsos", "en": "Bags"},
     "Bags": {"es": "Bolsos", "en": "Bags"},
+    "bolsos": {"es": "Bolsos", "en": "Bags"},
+    "buzos": {"es": "Buzos", "en": "Bags"},  # ⭐ AGREGADO
     "Mochilas": {"es": "Mochilas", "en": "Backpacks"},
     "Backpacks": {"es": "Mochilas", "en": "Backpacks"},
     "Accesorios": {"es": "Accesorios", "en": "Accessories"},
     "Accessories": {"es": "Accesorios", "en": "Accessories"},
+    "Tops": {"es": "Tops", "en": "Tops"},
+    "tops": {"es": "Tops", "en": "Tops"},
 }
 
 async def migrate_categories():

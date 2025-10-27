@@ -564,7 +564,7 @@ async def create_category(category_data: product_schemas.CategoriaCreate, db: As
     await db.refresh(new_category)
     
     # Invalidar el caché de categorías
-    await cache_service.delete_cache("all_categories")
+    await cache_service.delete_cache("categories:all")
     
     return new_category
 
@@ -610,7 +610,7 @@ async def update_category(
     await db.refresh(category)
     
     # Invalidar el caché de categorías
-    await cache_service.delete_cache("all_categories")
+    await cache_service.delete_cache("categories:all")
     
     return category
 
@@ -644,6 +644,6 @@ async def delete_category(category_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
     
     # Invalidar el caché de categorías
-    await cache_service.delete_cache("all_categories")
+    await cache_service.delete_cache("categories:all")
     
     return {"message": "Categoría eliminada exitosamente"}
