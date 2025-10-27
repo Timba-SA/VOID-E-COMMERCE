@@ -176,3 +176,50 @@ async def send_password_reset_email(receiver_email: str, token: str):
     except Exception as e:
         logger.error(f"Error al enviar email de reseteo a {receiver_email}: {e}", exc_info=True)
         raise
+
+async def send_html_email(destinatario: str, asunto: str, html_content: str):
+    '''
+    Envía un email HTML personalizado de forma asíncrona.
+    
+    Args:
+        destinatario: Email del destinatario
+        asunto: Asunto del email
+        html_content: Contenido HTML del email
+    '''
+    if not all([EMAIL_SENDER, EMAIL_PASSWORD]):
+        logger.error('El servicio de email no está configurado correctamente.')
+        raise ValueError('EMAIL_SENDER o EMAIL_PASSWORD no están configurados')
+    
+    message = MIMEMultipart('alternative')
+    message['Subject'] = asunto
+    message['From'] = EMAIL_SENDER
+    message['To'] = destinatario
+    
+    # Crear versión de texto plano (fallback)
+    text_content = 'Este es un email HTML. Por favor, usa un cliente de email que soporte HTML para ver el contenido completo.'
+    
+    # Adjuntar ambas versiones
+    part1 = MIMEText(text_content, 'plain')
+    part2 = MIMEText(html_content, 'html')
+    message.attach(part1)
+    message.attach(part2)
+    
+    # Configurar SSL
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=SMTP_SERVER,
+            port=SMTP_PORT,
+            start_tls=True,
+            username=EMAIL_SENDER,
+            password=EMAIL_PASSWORD,
+            tls_context=context
+        )
+        logger.info(f'?? Email HTML enviado exitosamente a {destinatario}')
+    except Exception as e:
+        logger.error(f'? Error al enviar email HTML a {destinatario}: {e}', exc_info=True)
+        raise
