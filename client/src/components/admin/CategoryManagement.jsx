@@ -29,13 +29,13 @@ const CategoryManagement = () => {
       setCategoryName('');
       setCategoryNameEs('');
       setCategoryNameEn('');
-      setSuccess('¡Categoría creada con éxito!');
+      setSuccess(t('admin_categories_created_success', '¡Categoría creada con éxito!'));
       setError('');
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (error) => {
       console.error('Error al crear categoría:', error);
-      setError(error.response?.data?.detail || error.detail || 'Error al crear la categoría');
+      setError(error.response?.data?.detail || error.detail || t('admin_categories_create_error', 'Error al crear la categoría'));
       setSuccess('');
     }
   });
@@ -50,13 +50,13 @@ const CategoryManagement = () => {
       setCategoryName('');
       setCategoryNameEs('');
       setCategoryNameEn('');
-      setSuccess('¡Categoría actualizada con éxito!');
+      setSuccess(t('admin_categories_updated_success', '¡Categoría actualizada con éxito!'));
       setError('');
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (error) => {
       console.error('Error al actualizar categoría:', error);
-      setError(error.response?.data?.detail || error.detail || 'Error al actualizar la categoría');
+      setError(error.response?.data?.detail || error.detail || t('admin_categories_update_error', 'Error al actualizar la categoría'));
       setSuccess('');
     }
   });
@@ -67,13 +67,13 @@ const CategoryManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminCategories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setSuccess('Categoría eliminada con éxito');
+      setSuccess(t('admin_categories_deleted_success', 'Categoría eliminada con éxito'));
       setError('');
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (error) => {
       console.error('Error al eliminar categoría:', error);
-      setError(error.response?.data?.detail || error.detail || 'Error al eliminar la categoría');
+      setError(error.response?.data?.detail || error.detail || t('admin_categories_delete_error', 'Error al eliminar la categoría'));
       setSuccess('');
     }
   });
@@ -84,7 +84,7 @@ const CategoryManagement = () => {
     setSuccess('');
     
     if (!categoryName.trim()) {
-      setError('El nombre de la categoría no puede estar vacío');
+      setError(t('admin_categories_name_required', 'El nombre de la categoría no puede estar vacío'));
       return;
     }
 
@@ -124,7 +124,7 @@ const CategoryManagement = () => {
   };
 
   const handleDelete = (categoryId, categoryName) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar la categoría "${categoryName}"?\n\nSolo se puede eliminar si no tiene productos asociados.`)) {
+    if (window.confirm(t('admin_categories_delete_confirm', '¿Estás seguro de que quieres eliminar la categoría "{{name}}"?\n\nSolo se puede eliminar si no tiene productos asociados.', { name: categoryName }))) {
       setError('');
       setSuccess('');
       deleteCategoryMutation.mutate(categoryId);
@@ -135,9 +135,9 @@ const CategoryManagement = () => {
     return (
       <div>
         <div className="admin-header">
-          <h1>Gestión de Categorías</h1>
+          <h1>{t('admin_categories_title', 'Gestión de Categorías')}</h1>
         </div>
-        <p>Cargando categorías...</p>
+        <p>{t('admin_categories_loading', 'Cargando categorías...')}</p>
       </div>
     );
   }
@@ -145,7 +145,7 @@ const CategoryManagement = () => {
   return (
     <div>
       <div className="admin-header">
-        <h1>Gestión de Categorías</h1>
+        <h1>{t('admin_categories_title', 'Gestión de Categorías')}</h1>
       </div>
 
       {/* Mensajes de feedback */}
@@ -163,18 +163,18 @@ const CategoryManagement = () => {
       {/* Formulario de Creación/Edición */}
       <div style={{ backgroundColor: '#fff', border: '1px solid #dee2e6', borderRadius: '4px', padding: '1.5rem', marginBottom: '2rem' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#495057' }}>
-          {editingCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}
+          {editingCategory ? t('admin_categories_edit_title', 'Editar Categoría') : t('admin_categories_create_title', 'Crear Nueva Categoría')}
         </h3>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', color: '#495057', marginBottom: '0.5rem' }}>
-              Nombre de la Categoría (identificador)
+              {t('admin_categories_name_label', 'Nombre de la Categoría (identificador)')}
             </label>
             <input
               type="text"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              placeholder="Ej: remeras, camperas, etc."
+              placeholder={t('admin_categories_name_placeholder', 'Ej: remeras, camperas, etc.')}
               style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}
               required
             />
@@ -183,26 +183,26 @@ const CategoryManagement = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', color: '#495057', marginBottom: '0.5rem' }}>
-                Nombre en Español
+                {t('admin_categories_name_es_label', 'Nombre en Español')}
               </label>
               <input
                 type="text"
                 value={categoryNameEs}
                 onChange={(e) => setCategoryNameEs(e.target.value)}
-                placeholder="Ej: Remeras"
+                placeholder={t('admin_categories_name_es_placeholder', 'Ej: Remeras')}
                 style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}
               />
             </div>
             
             <div>
               <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', color: '#495057', marginBottom: '0.5rem' }}>
-                Nombre en Inglés
+                {t('admin_categories_name_en_label', 'Nombre en Inglés')}
               </label>
               <input
                 type="text"
                 value={categoryNameEn}
                 onChange={(e) => setCategoryNameEn(e.target.value)}
-                placeholder="Ej: T-shirts"
+                placeholder={t('admin_categories_name_en_placeholder', 'Ej: T-shirts')}
                 style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}
               />
             </div>
@@ -216,8 +216,8 @@ const CategoryManagement = () => {
               style={{ margin: 0 }}
             >
               {editingCategory 
-                ? (updateCategoryMutation.isPending ? 'Actualizando...' : 'Actualizar Categoría')
-                : (createCategoryMutation.isPending ? 'Creando...' : 'Crear Categoría')
+                ? (updateCategoryMutation.isPending ? t('admin_categories_updating_button', 'Actualizando...') : t('admin_categories_update_button', 'Actualizar Categoría'))
+                : (createCategoryMutation.isPending ? t('admin_categories_creating_button', 'Creando...') : t('admin_categories_create_button', 'Crear Categoría'))
               }
             </button>
             {editingCategory && (
@@ -227,7 +227,7 @@ const CategoryManagement = () => {
                 className="form-button outline"
                 style={{ margin: 0 }}
               >
-                Cancelar
+                {t('admin_categories_cancel_button', 'Cancelar')}
               </button>
             )}
           </div>
@@ -239,11 +239,11 @@ const CategoryManagement = () => {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Español</th>
-              <th>Inglés</th>
-              <th>Acciones</th>
+              <th>{t('admin_categories_table_id', 'ID')}</th>
+              <th>{t('admin_categories_table_name', 'Nombre')}</th>
+              <th>{t('admin_categories_table_spanish', 'Español')}</th>
+              <th>{t('admin_categories_table_english', 'Inglés')}</th>
+              <th>{t('admin_categories_table_actions', 'Acciones')}</th>
             </tr>
           </thead>
           <tbody>
@@ -260,14 +260,14 @@ const CategoryManagement = () => {
                       className="action-btn edit"
                       style={{ marginRight: '0.5rem' }}
                     >
-                      Editar
+                      {t('admin_categories_edit_action', 'Editar')}
                     </button>
                     <button
                       onClick={() => handleDelete(category.id, getCategoryName(category, i18n.language))}
                       disabled={deleteCategoryMutation.isPending}
                       className="action-btn delete"
                     >
-                      Eliminar
+                      {t('admin_categories_delete_action', 'Eliminar')}
                     </button>
                   </td>
                 </tr>
@@ -275,7 +275,7 @@ const CategoryManagement = () => {
             ) : (
               <tr>
                 <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#6c757d' }}>
-                  No hay categorías creadas aún.
+                  {t('admin_categories_no_categories', 'No hay categorías creadas aún.')}
                 </td>
               </tr>
             )}

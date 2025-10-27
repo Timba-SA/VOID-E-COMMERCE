@@ -380,18 +380,12 @@ async def create_preference(request_data: checkout_schemas.PreferenceRequest, db
         "notification_url": f"{BACKEND_URL}/api/checkout/webhook",
         "external_reference": external_reference,
         "statement_descriptor": "VOID E-COMMERCE",
+        "binary_mode": True  # Forzar estados claros (approved/rejected)
     }
     
-    # Solo habilitar auto_return si el FRONTEND es HTTPS (MP lo requiere)
-    if success_url.startswith("https://"):
-        preference_data["auto_return"] = "approved"
-        preference_data["binary_mode"] = True
-        logger.info(f"✅ HTTPS detectado - auto_return='approved' habilitado")
-    else:
-        # En localhost (HTTP), NO usar auto_return (MP lo rechaza con error 400)
-        logger.warning(f"⚠️ HTTP/localhost detectado - auto_return DESHABILITADO (MP requiere HTTPS)")
-        logger.warning(f"💡 Para habilitar auto_return, expone el frontend con ngrok: ngrok http 5173")
-        logger.warning(f"💡 Luego actualiza FRONTEND_URL en .env con la URL de ngrok")
+    # NO usar auto_return para que el usuario vea un botón "Volver al sitio"
+    # en vez de redirección automática después de 5 segundos
+    logger.info(f"✅ Preferencia configurada con binary_mode=True, sin auto_return (botón manual)")
 
     logger.info(f"📦 Creando preferencia MP para {external_reference}. Total: {total_amount_calculated:.2f} ARS")
     # logger.debug(f"Payload MP: {preference_data}")

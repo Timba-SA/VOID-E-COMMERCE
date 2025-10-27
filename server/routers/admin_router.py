@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
+from datetime import timezone
 # --- ¡IMPORT NUEVO Y CLAVE! ---
 from pydantic import TypeAdapter 
 # --- FIN DEL IMPORT ---
@@ -69,10 +70,28 @@ async def delete_expense(expense_id: int, db: AsyncSession = Depends(get_db)):
 # --- Endpoints de Ventas (SIN CAMBIOS) ---
 @router.get("/sales", response_model=List[admin_schemas.Orden])
 async def get_sales(db: AsyncSession = Depends(get_db)):
+    """
+    Obtiene todas las órdenes del sistema, ordenadas por fecha descendente.
+    """
     result = await db.execute(
-        select(Orden).options(joinedload(Orden.detalles))
+        select(Orden)
+        .options(joinedload(Orden.detalles))
+        .order_by(Orden.creado_en.desc())
     )
     sales = result.scalars().unique().all()
+    
+    # Asegurar que 'creado_en' sea timezone-aware en UTC antes de serializar
+    for order in sales:
+        try:
+            if hasattr(order, 'creado_en') and order.creado_en is not None:
+                if order.creado_en.tzinfo is None:
+                    order.creado_en = order.creado_en.replace(tzinfo=timezone.utc)
+                else:
+                    order.creado_en = order.creado_en.astimezone(timezone.utc)
+        except Exception:
+            # No bloquear si hay un valor extraño; continuar con el siguiente
+            pass
+    
     return sales
 
 @router.get("/sales/{order_id}", response_model=admin_schemas.OrdenDetallada, summary="Obtener detalle de una orden específica")

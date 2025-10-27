@@ -54,10 +54,10 @@ const ExpenseManagement = () => {
         fecha: new Date().toISOString().split('T')[0]
       });
       
-      alert(t('expense_created_success', 'Gasto creado exitosamente'));
+      alert(t('admin_expenses_created_success', 'Gasto creado exitosamente'));
     },
     onError: (error) => {
-      alert(t('expense_created_error', 'Error al crear gasto: ') + (error.detail || error.message));
+      alert(t('admin_expenses_create_error', 'Error al crear gasto: ') + (error.detail || error.message));
     }
   });
 
@@ -69,10 +69,10 @@ const ExpenseManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['expensesByCategory'] });
       
-      alert(t('expense_deleted_success', 'Gasto eliminado exitosamente'));
+      alert(t('admin_expenses_deleted_success', 'Gasto eliminado exitosamente'));
     },
     onError: (error) => {
-      alert(t('expense_deleted_error', 'Error al eliminar gasto: ') + (error.detail || error.message));
+      alert(t('admin_expenses_delete_error', 'Error al eliminar gasto: ') + (error.detail || error.message));
     }
   });
 
@@ -81,19 +81,19 @@ const ExpenseManagement = () => {
     
     // Validaciones
     if (!formData.descripcion.trim()) {
-      alert(t('expense_error_description', 'La descripción es obligatoria'));
+      alert(t('admin_expenses_error_description', 'La descripción es obligatoria'));
       return;
     }
     if (!formData.monto || parseFloat(formData.monto) <= 0) {
-      alert(t('expense_error_amount', 'El monto debe ser mayor a 0'));
+      alert(t('admin_expenses_error_amount', 'El monto debe ser mayor a 0'));
       return;
     }
     if (!formData.categoria.trim()) {
-      alert(t('expense_error_category', 'La categoría es obligatoria'));
+      alert(t('admin_expenses_error_category', 'La categoría es obligatoria'));
       return;
     }
     if (!formData.fecha) {
-      alert(t('expense_error_date', 'La fecha es obligatoria'));
+      alert(t('admin_expenses_error_date', 'La fecha es obligatoria'));
       return;
     }
 
@@ -106,7 +106,7 @@ const ExpenseManagement = () => {
   };
 
   const handleDelete = (expenseId) => {
-    if (window.confirm(t('expense_delete_confirm', '¿Estás seguro de eliminar este gasto?'))) {
+    if (window.confirm(t('admin_expenses_delete_confirm', '¿Estás seguro de eliminar este gasto?'))) {
       deleteMutation.mutate(expenseId);
     }
   };
@@ -118,35 +118,35 @@ const ExpenseManagement = () => {
     });
   };
 
-  if (isLoading) return <Spinner message={t('loading_expenses', 'Cargando gastos...')} />;
+  if (isLoading) return <Spinner message={t('admin_expenses_loading', 'Cargando gastos...')} />;
 
   return (
     <div className="expense-management">
       <div className="admin-header">
-        <h1>{t('expense_management_title', 'Gestión de Gastos')}</h1>
+        <h1>{t('admin_expenses_title', 'Gestión de Gastos')}</h1>
         <button 
           className="btn btn-primary" 
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? t('cancel', 'Cancelar') : t('add_expense', 'Agregar Gasto')}
+          {showForm ? t('admin_expenses_cancel_button', 'Cancelar') : t('admin_expenses_add_button', 'Agregar Gasto')}
         </button>
       </div>
 
       {error && (
         <div className="error-message">
-          {t('error_loading_expenses', 'Error al cargar gastos: ')} {error.detail || error.message}
+          {t('admin_expenses_load_error', 'Error al cargar gastos: ')} {error.detail || error.message}
         </div>
       )}
 
       {/* Formulario para crear gasto */}
       {showForm && (
         <div className="expense-form-container">
-          <h2>{t('new_expense_title', 'Nuevo Gasto')}</h2>
+          <h2>{t('admin_expenses_new_title', 'Nuevo Gasto')}</h2>
           <form onSubmit={handleSubmit} className="expense-form">
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="descripcion">
-                  {t('expense_description', 'Descripción')} <span className="required">*</span>
+                  {t('admin_expenses_description_label', 'Descripción')} <span className="required">*</span>
                 </label>
                 <input
                   type="text"
@@ -154,14 +154,14 @@ const ExpenseManagement = () => {
                   name="descripcion"
                   value={formData.descripcion}
                   onChange={handleChange}
-                  placeholder={t('expense_description_placeholder', 'Ej: Hosting mensual AWS')}
+                  placeholder={t('admin_expenses_description_placeholder', 'Ej: Hosting mensual AWS')}
                   required
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="monto">
-                  {t('expense_amount', 'Monto ($)')} <span className="required">*</span>
+                  {t('admin_expenses_amount_label', 'Monto ($)')} <span className="required">*</span>
                 </label>
                 <input
                   type="number"
@@ -180,7 +180,7 @@ const ExpenseManagement = () => {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="categoria">
-                  {t('expense_category', 'Categoría')} <span className="required">*</span>
+                  {t('admin_expenses_category_label', 'Categoría')} <span className="required">*</span>
                 </label>
                 <select
                   id="categoria"
@@ -189,20 +189,20 @@ const ExpenseManagement = () => {
                   onChange={handleChange}
                   required
                 >
-                  <option value="">-- {t('select', 'Seleccione')} --</option>
-                  <option value="Tecnología">Tecnología</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Logística">Logística</option>
-                  <option value="Finanzas">Finanzas</option>
-                  <option value="Operaciones">Operaciones</option>
-                  <option value="RRHH">Recursos Humanos</option>
-                  <option value="Otros">Otros</option>
+                  <option value="">-- {t('admin_expenses_select', 'Seleccione')} --</option>
+                  <option value="Tecnología">{t('admin_expenses_category_technology', 'Tecnología')}</option>
+                  <option value="Marketing">{t('admin_expenses_category_marketing', 'Marketing')}</option>
+                  <option value="Logística">{t('admin_expenses_category_logistics', 'Logística')}</option>
+                  <option value="Finanzas">{t('admin_expenses_category_finance', 'Finanzas')}</option>
+                  <option value="Operaciones">{t('admin_expenses_category_operations', 'Operaciones')}</option>
+                  <option value="RRHH">{t('admin_expenses_category_hr', 'Recursos Humanos')}</option>
+                  <option value="Otros">{t('admin_expenses_category_other', 'Otros')}</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label htmlFor="fecha">
-                  {t('expense_date', 'Fecha')} <span className="required">*</span>
+                  {t('admin_expenses_date_label', 'Fecha')} <span className="required">*</span>
                 </label>
                 <input
                   type="date"
@@ -222,8 +222,8 @@ const ExpenseManagement = () => {
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending 
-                  ? t('saving', 'Guardando...') 
-                  : t('save_expense', 'Guardar Gasto')
+                  ? t('admin_expenses_saving_button', 'Guardando...') 
+                  : t('admin_expenses_save_button', 'Guardar Gasto')
                 }
               </button>
             </div>
@@ -233,22 +233,22 @@ const ExpenseManagement = () => {
 
       {/* Tabla de gastos */}
       <div className="expenses-table-container">
-        <h2>{t('expenses_list', 'Lista de Gastos')}</h2>
+        <h2>{t('admin_expenses_list_title', 'Lista de Gastos')}</h2>
         
         {expenses && expenses.length === 0 ? (
           <p className="no-data-message">
-            {t('no_expenses', 'No hay gastos registrados. Agrega el primero para verlo reflejado en el gráfico.')}
+            {t('admin_expenses_no_data', 'No hay gastos registrados. Agrega el primero para verlo reflejado en el gráfico.')}
           </p>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>{t('expense_date', 'Fecha')}</th>
-                <th>{t('expense_description', 'Descripción')}</th>
-                <th>{t('expense_category', 'Categoría')}</th>
-                <th>{t('expense_amount', 'Monto')}</th>
-                <th>{t('actions', 'Acciones')}</th>
+                <th>{t('admin_expenses_date_label', 'Fecha')}</th>
+                <th>{t('admin_expenses_description_label', 'Descripción')}</th>
+                <th>{t('admin_expenses_category_label', 'Categoría')}</th>
+                <th>{t('admin_expenses_amount_label', 'Monto')}</th>
+                <th>{t('admin_expenses_actions', 'Acciones')}</th>
               </tr>
             </thead>
             <tbody>
@@ -271,7 +271,7 @@ const ExpenseManagement = () => {
                       className="action-btn delete"
                       disabled={deleteMutation.isPending}
                     >
-                      {t('delete', 'Eliminar')}
+                      {t('admin_expenses_delete_button', 'Eliminar')}
                     </button>
                   </td>
                 </tr>
@@ -280,7 +280,7 @@ const ExpenseManagement = () => {
             {expenses && expenses.length > 0 && (
               <tfoot>
                 <tr>
-                  <td colSpan="4" className="text-right"><strong>{t('total', 'Total')}:</strong></td>
+                  <td colSpan="4" className="text-right"><strong>{t('admin_expenses_total', 'Total')}:</strong></td>
                   <td className="text-right">
                     <strong>
                       ${expenses.reduce((sum, exp) => sum + exp.monto, 0).toLocaleString('es-AR', { 
