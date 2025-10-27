@@ -111,8 +111,13 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = [
-    "https://dominiodemelli.live/", # El dominio de tu frontend en producción
-    "http://localhost:5173",        # El dominio de tu frontend para desarrollo local
+    # --- Dominios de Render (Staging/Viejos) ---
+    "https://void-frontend-g0hf.onrender.com",  # El front de Render
+    "https://void-e-commerce-1.onrender.com", # El back de Render
+
+    # --- Desarrollo Local ---
+    "http://localhost:5173",  # React/Vite en tu compu
+    "http://localhost:8000"   # El backend local
 ]
 
 app.add_middleware(

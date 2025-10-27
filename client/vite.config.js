@@ -14,4 +14,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+
+  server: {
+    // Esto le dice a Vite que permita hosts que terminen en .loca.lt
+    // El '.' al principio es el comodín (wildcard)
+    allowedHosts: ['.loca.lt'],
+  },
 });
