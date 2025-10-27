@@ -67,32 +67,66 @@ async def delete_expense(expense_id: int, db: AsyncSession = Depends(get_db)):
     return {"message": "Gasto eliminado exitosamente"}
 
 
-# --- Endpoints de Ventas (SIN CAMBIOS) ---
-@router.get("/sales", response_model=List[admin_schemas.Orden])
+# --- Endpoints de Ventas ---
+@router.get("/sales")
 async def get_sales(db: AsyncSession = Depends(get_db)):
     """
     Obtiene todas las órdenes del sistema, ordenadas por fecha descendente.
     """
-    result = await db.execute(
-        select(Orden)
-        .options(joinedload(Orden.detalles))
-        .order_by(Orden.creado_en.desc())
-    )
-    sales = result.scalars().unique().all()
-    
-    # Asegurar que 'creado_en' sea timezone-aware en UTC antes de serializar
-    for order in sales:
-        try:
-            if hasattr(order, 'creado_en') and order.creado_en is not None:
-                if order.creado_en.tzinfo is None:
-                    order.creado_en = order.creado_en.replace(tzinfo=timezone.utc)
+    try:
+        result = await db.execute(
+            select(Orden)
+            .options(joinedload(Orden.detalles))
+            .order_by(Orden.creado_en.desc())
+        )
+        sales = result.scalars().unique().all()
+        
+        # Convertir objetos ORM a diccionarios y formatear fechas
+        orders_list = []
+        for order in sales:
+            # Asegurar que creado_en sea timezone-aware y convertir a ISO string
+            created_at = order.creado_en
+            if created_at is not None:
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
                 else:
-                    order.creado_en = order.creado_en.astimezone(timezone.utc)
-        except Exception:
-            # No bloquear si hay un valor extraño; continuar con el siguiente
-            pass
-    
-    return sales
+                    created_at = created_at.astimezone(timezone.utc)
+                created_at_str = created_at.isoformat()
+            else:
+                created_at_str = None
+            
+            # Crear diccionario de la orden
+            order_dict = {
+                "id": order.id,
+                "usuario_id": order.usuario_id,
+                "monto_total": float(order.monto_total),
+                "estado": order.estado,
+                "estado_pago": order.estado_pago,
+                "creado_en": created_at_str,
+                "detalles": []
+            }
+            
+            # Agregar detalles
+            for detalle in order.detalles:
+                detalle_dict = {
+                    "variante_producto_id": detalle.variante_producto_id,
+                    "cantidad": detalle.cantidad,
+                    "precio_en_momento_compra": float(detalle.precio_en_momento_compra)
+                }
+                order_dict["detalles"].append(detalle_dict)
+            
+            orders_list.append(order_dict)
+        
+        return orders_list
+    except Exception as e:
+        # Log del error para debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error al obtener órdenes: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener órdenes: {str(e)}"
+        )
 
 @router.get("/sales/{order_id}", response_model=admin_schemas.OrdenDetallada, summary="Obtener detalle de una orden específica")
 async def get_sale_by_id(order_id: int, db: AsyncSession = Depends(get_db)):
