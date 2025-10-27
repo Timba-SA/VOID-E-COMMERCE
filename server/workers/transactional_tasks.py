@@ -20,12 +20,17 @@ logger = logging.getLogger(__name__)
     retry_backoff=True
 )
 def enviar_email_confirmacion_compra_task(order_id: int):
+    logger.info(f"=" * 80)
+    logger.info(f"🚀 TAREA DE EMAIL INICIADA - Orden ID: {order_id}")
+    logger.info(f"=" * 80)
     try:
-        logger.info(f"Iniciando envio de email de confirmacion para orden {order_id}")
+        logger.info(f"📧 Iniciando envio de email de confirmacion para orden {order_id}")
         asyncio.run(_send_purchase_confirmation_email(order_id))
-        logger.info(f"Email de confirmacion enviado exitosamente para orden {order_id}")
+        logger.info(f"✅ Email de confirmacion enviado exitosamente para orden {order_id}")
+        logger.info(f"=" * 80)
     except Exception as e:
-        logger.error(f"Error al enviar email de confirmacion para orden {order_id}: {e}", exc_info=True)
+        logger.error(f"❌ Error al enviar email de confirmacion para orden {order_id}: {e}", exc_info=True)
+        logger.error(f"=" * 80)
         raise
 
 

@@ -560,9 +560,11 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
 
                             # Opcional: Enviar email de confirmación en background
                             try:
-                                enviar_email_confirmacion_compra_task.delay(order_id_candidate)
+                                logger.info(f"📧 Encolando email de confirmación para orden {order_id_candidate}")
+                                task_result = enviar_email_confirmacion_compra_task.delay(order_id_candidate)
+                                logger.info(f"✅ Email encolado exitosamente. Task ID: {task_result.id}")
                             except Exception as e:
-                                logger.warning(f"No se pudo encolar email para orden {order_id_candidate}: {e}")
+                                logger.error(f"❌ No se pudo encolar email para orden {order_id_candidate}: {e}", exc_info=True)
 
                             return {"status": "ok", "order_id": order_id_candidate, "message": f"Orden {order_id_candidate} actualizada correctamente"}
 
@@ -608,9 +610,11 @@ async def mercadopago_webhook(request: Request, db: AsyncSession = Depends(get_d
                     
                     # Opcional: Enviar email de confirmación
                     try:
-                        enviar_email_confirmacion_compra_task.delay(new_order_id)
+                        logger.info(f"📧 Encolando email de confirmación para orden {new_order_id}")
+                        task_result = enviar_email_confirmacion_compra_task.delay(new_order_id)
+                        logger.info(f"✅ Email encolado exitosamente. Task ID: {task_result.id}")
                     except Exception as e:
-                        logger.warning(f"No se pudo encolar email para orden {new_order_id}: {e}")
+                        logger.error(f"❌ No se pudo encolar email para orden {new_order_id}: {e}", exc_info=True)
                     
                 except Exception as e:
                     await db.rollback()
