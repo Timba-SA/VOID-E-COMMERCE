@@ -8,8 +8,8 @@ import FilterPanel from '@/components/common/FilterPanel.jsx';
 import Spinner from '@/components/common/Spinner.jsx';
 import ProductCard from '@/components/products/ProductCard.jsx';
 
-// Categorías de hombre por su nombre en español (nombre original en DB)
-const MENSWEAR_CATEGORIES = ['hoodies', 'camperas', 'remeras', 'pantalones'];
+// NOTA: Estas son las categorías que van en MENSWEAR según el campo 'nombre' en la DB
+const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
 const ProductCardSkeleton = () => (
     <div className="catalog-product-card">

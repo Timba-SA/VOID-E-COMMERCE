@@ -6,8 +6,9 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { CartContext } from '../../context/CartContext';
 import { useTranslation } from 'react-i18next';
 
-// Categorías de hombre por su nombre en español (nombre original en DB)
-const MENSWEAR_CATEGORIES = ['hoodies', 'camperas', 'remeras', 'pantalones'];
+// NOTA: Estas son las categorías que van en MENSWEAR según el campo 'nombre' en la DB
+// El resto automáticamente va a WOMENSWEAR
+const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
 
 const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
   const location = useLocation();
@@ -30,7 +31,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
           return;
         }
 
-        // Separar por nombre en español (el campo 'nombre' de la DB)
+        // Filtrar por el campo 'nombre' de la base de datos
         const menswear = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
         const womenswear = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
 
