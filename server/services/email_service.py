@@ -178,24 +178,24 @@ async def send_password_reset_email(receiver_email: str, token: str):
         raise
 
 async def send_html_email(destinatario: str, asunto: str, html_content: str):
-    '''
-    Envía un email HTML personalizado de forma asíncrona.
+    """
+    Envia un email HTML personalizado de forma asincrona.
     
     Args:
         destinatario: Email del destinatario
         asunto: Asunto del email
         html_content: Contenido HTML del email
-    '''
+    """
     if not all([EMAIL_SENDER, EMAIL_PASSWORD]):
-        logger.error('El servicio de email no está configurado correctamente.')
-        raise ValueError('EMAIL_SENDER o EMAIL_PASSWORD no están configurados')
+        logger.error('El servicio de email no esta configurado correctamente.')
+        raise ValueError('EMAIL_SENDER o EMAIL_PASSWORD no estan configurados')
     
     message = MIMEMultipart('alternative')
     message['Subject'] = asunto
     message['From'] = EMAIL_SENDER
     message['To'] = destinatario
     
-    # Crear versión de texto plano (fallback)
+    # Crear version de texto plano (fallback)
     text_content = 'Este es un email HTML. Por favor, usa un cliente de email que soporte HTML para ver el contenido completo.'
     
     # Adjuntar ambas versiones
@@ -219,7 +219,7 @@ async def send_html_email(destinatario: str, asunto: str, html_content: str):
             password=EMAIL_PASSWORD,
             tls_context=context
         )
-        logger.info(f'?? Email HTML enviado exitosamente a {destinatario}')
+        logger.info(f'Email HTML enviado exitosamente a {destinatario}')
     except Exception as e:
-        logger.error(f'? Error al enviar email HTML a {destinatario}: {e}', exc_info=True)
+        logger.error(f'Error al enviar email HTML a {destinatario}: {e}', exc_info=True)
         raise
