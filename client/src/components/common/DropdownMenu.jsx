@@ -6,7 +6,8 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { CartContext } from '../../context/CartContext';
 import { useTranslation } from 'react-i18next';
 
-const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
+// Categorías de hombre por su nombre en español (nombre original en DB)
+const MENSWEAR_CATEGORIES = ['hoodies', 'camperas', 'remeras', 'pantalones'];
 
 const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
   const location = useLocation();
@@ -29,6 +30,7 @@ const DropdownMenu = ({ isOpen, onClose, logoPosition, onOpenSearch }) => {
           return;
         }
 
+        // Separar por nombre en español (el campo 'nombre' de la DB)
         const menswear = allCategories.filter(c => MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
         const womenswear = allCategories.filter(c => !MENSWEAR_CATEGORIES.includes(c.nombre.toLowerCase()));
 

@@ -8,7 +8,8 @@ import FilterPanel from '@/components/common/FilterPanel.jsx';
 import Spinner from '@/components/common/Spinner.jsx';
 import ProductCard from '@/components/products/ProductCard.jsx';
 
-const MENSWEAR_CATEGORIES = ['hoodies', 'jackets', 'shirts', 'pants'];
+// Categorías de hombre por su nombre en español (nombre original en DB)
+const MENSWEAR_CATEGORIES = ['hoodies', 'camperas', 'remeras', 'pantalones'];
 
 const ProductCardSkeleton = () => (
     <div className="catalog-product-card">

@@ -128,53 +128,69 @@ async def get_sales(db: AsyncSession = Depends(get_db)):
             detail=f"Error al obtener órdenes: {str(e)}"
         )
 
-@router.get("/sales/{order_id}", response_model=admin_schemas.OrdenDetallada, summary="Obtener detalle de una orden específica")
+@router.get("/sales/{order_id}", summary="Obtener detalle de una orden específica")
 async def get_sale_by_id(order_id: int, db: AsyncSession = Depends(get_db)):
     """
     Obtiene el detalle completo de una orden específica, incluyendo información de los productos.
     """
-    result = await db.execute(
-        select(Orden)
-        .options(
-            joinedload(Orden.detalles)
-            .joinedload(DetalleOrden.variante_producto)
-            .joinedload(VarianteProducto.producto)
+    try:
+        result = await db.execute(
+            select(Orden)
+            .options(
+                joinedload(Orden.detalles)
+                .joinedload(DetalleOrden.variante_producto)
+                .joinedload(VarianteProducto.producto)
+            )
+            .where(Orden.id == order_id)
         )
-        .where(Orden.id == order_id)
-    )
-    order = result.scalars().unique().first()
-    
-    if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Orden con ID {order_id} no encontrada"
-        )
-    
-    # Construimos el objeto de respuesta manualmente para incluir el nombre del producto
-    order_dict = {
-        "id": order.id,
-        "usuario_id": order.usuario_id,
-        "monto_total": float(order.monto_total),
-        "estado": order.estado,
-        "estado_pago": order.estado_pago,
-        "creado_en": order.creado_en,
-        "detalles": []
-    }
-    
-    for detalle in order.detalles:
-        detalle_dict = {
-            "variante_producto_id": detalle.variante_producto_id,
-            "cantidad": detalle.cantidad,
-            "precio_en_momento_compra": float(detalle.precio_en_momento_compra),
-            "variante_producto": {
-                "tamanio": detalle.variante_producto.tamanio,
-                "color": detalle.variante_producto.color,
-                "producto_nombre": detalle.variante_producto.producto.nombre
-            }
+        order = result.scalars().unique().first()
+        
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Orden con ID {order_id} no encontrada"
+            )
+        
+        # Convertir creado_en a UTC timezone-aware y luego a ISO string
+        creado_en_utc = order.creado_en
+        if creado_en_utc.tzinfo is None:
+            creado_en_utc = creado_en_utc.replace(tzinfo=timezone.utc)
+        
+        # Construimos el objeto de respuesta manualmente para incluir el nombre del producto
+        order_dict = {
+            "id": order.id,
+            "usuario_id": order.usuario_id,
+            "monto_total": float(order.monto_total),
+            "estado": order.estado,
+            "estado_pago": order.estado_pago,
+            "creado_en": creado_en_utc.isoformat(),  # Convertir a ISO string
+            "detalles": []
         }
-        order_dict["detalles"].append(detalle_dict)
-    
-    return order_dict
+        
+        for detalle in order.detalles:
+            detalle_dict = {
+                "variante_producto_id": detalle.variante_producto_id,
+                "cantidad": detalle.cantidad,
+                "precio_en_momento_compra": float(detalle.precio_en_momento_compra),
+                "variante_producto": {
+                    "tamanio": detalle.variante_producto.tamanio,
+                    "color": detalle.variante_producto.color,
+                    "producto_nombre": detalle.variante_producto.producto.nombre
+                }
+            }
+            order_dict["detalles"].append(detalle_dict)
+        
+        return order_dict
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error al obtener detalle de orden {order_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener detalle de orden: {str(e)}"
+        )
 
 @router.post("/sales", status_code=201)
 async def create_manual_sale(sale_data: admin_schemas.ManualSaleCreate, db: AsyncSession = Depends(get_db)):
