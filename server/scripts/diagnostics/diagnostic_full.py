@@ -5,9 +5,10 @@ import asyncio
 import sys
 import os
 from datetime import datetime
+from pathlib import Path
 
-# Agregar el directorio parent al path para importar módulos
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Agregar el directorio server al path para importar módulos
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker

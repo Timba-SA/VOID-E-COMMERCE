@@ -75,6 +75,10 @@ def test_endpoint(name, url, iterations=3):
 def clear_cache():
     """Limpia el cache de Redis."""
     try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        
         import redis
         from settings import settings
         

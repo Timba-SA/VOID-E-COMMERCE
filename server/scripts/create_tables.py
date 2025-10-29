@@ -1,7 +1,11 @@
-# /server/create_tables.py
+# /server/scripts/create_tables.py
 
 import asyncio
 import logging
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # Importamos las settings para saber la URL de la DB

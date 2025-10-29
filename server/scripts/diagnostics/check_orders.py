@@ -1,6 +1,9 @@
 # Script de diagnóstico para verificar órdenes en la base de datos
 import asyncio
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
