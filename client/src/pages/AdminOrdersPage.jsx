@@ -43,7 +43,7 @@ const AdminOrdersPage = () => {
       {error && <p className="error-message" style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
 
       <div className="table-responsive-wrapper">
-        <table className="admin-table">
+        <table className="admin-table admin-orders-table">
           <thead>
             <tr>
               <th>{t('admin_orders_table_order_id')}</th>

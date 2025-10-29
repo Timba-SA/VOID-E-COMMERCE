@@ -2459,13 +2459,33 @@ body:has(.product-details-container-full) .main-header {
   border-collapse: collapse;
 }
 
-/* Estilos específicos para tabla de órdenes */
-.admin-table th:nth-child(1) { width: 80px; } /* ORDER ID */
-.admin-table th:nth-child(2) { width: 150px; } /* USER ID */
-.admin-table th:nth-child(3) { width: 120px; } /* TOTAL AMOUNT */
-.admin-table th:nth-child(4) { width: 150px; } /* PAYMENT STATUS */
-.admin-table th:nth-child(5) { width: 130px; } /* DATE */
-.admin-table th:nth-child(6) { width: 150px; } /* ACTIONS */
+/* Estilos específicos para tabla de productos (AdminProductsPage) */
+.admin-products-table th:nth-child(1) { width: 60px; }  /* ID */
+.admin-products-table th:nth-child(2) { width: auto; }  /* NOMBRE (flexible) */
+.admin-products-table th:nth-child(3) { width: 100px; } /* PRECIO */
+.admin-products-table th:nth-child(4) { width: 120px; } /* STOCK (VARIANTES) */
+.admin-products-table th:nth-child(5) { width: 280px; } /* ACCIONES (3 botones) */
+
+.admin-products-table td:nth-child(1) { width: 60px; }
+.admin-products-table td:nth-child(2) { width: auto; }
+.admin-products-table td:nth-child(3) { width: 100px; }
+.admin-products-table td:nth-child(4) { width: 120px; }
+.admin-products-table td:nth-child(5) { width: 280px; }
+
+/* Estilos específicos para tabla de órdenes (AdminOrdersPage) */
+.admin-orders-table th:nth-child(1) { width: 80px; }  /* ORDER ID */
+.admin-orders-table th:nth-child(2) { width: 150px; } /* USER ID */
+.admin-orders-table th:nth-child(3) { width: 120px; } /* TOTAL AMOUNT */
+.admin-orders-table th:nth-child(4) { width: 150px; } /* PAYMENT STATUS */
+.admin-orders-table th:nth-child(5) { width: 130px; } /* DATE */
+.admin-orders-table th:nth-child(6) { width: 150px; } /* ACTIONS */
+
+.admin-orders-table td:nth-child(1) { width: 80px; }
+.admin-orders-table td:nth-child(2) { width: 150px; }
+.admin-orders-table td:nth-child(3) { width: 120px; }
+.admin-orders-table td:nth-child(4) { width: 150px; }
+.admin-orders-table td:nth-child(5) { width: 130px; }
+.admin-orders-table td:nth-child(6) { width: 150px; }
 
 
 /* --- ESTILOS RESPONSIVE (PARA CELULARES) --- */
