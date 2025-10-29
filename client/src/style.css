@@ -928,7 +928,7 @@ main {
   border-collapse: collapse; 
   background-color: #fff; 
   font-size: 0.9rem; 
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .admin-table th, 
