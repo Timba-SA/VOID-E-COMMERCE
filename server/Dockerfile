@@ -46,6 +46,6 @@ EXPOSE 8000
 # Gunicorn es un 'manager' que maneja múltiples procesos de Uvicorn.
 # -w 4: Inicia 4 "workers" (como 4 empleados atendiendo pedidos a la vez).
 # -k uvicorn.workers.UvicornWorker: Le dice a Gunicorn que use la velocidad de Uvicorn.
+# -b 0.0.0.0:8000: Escucha en el puerto 8000 (bind).
 # main:app: Nuestro archivo 'main.py' y el objeto 'app' de FastAPI.
-# --bind 0.0.0.0:8000: Escucha en el puerto 8000.
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "main:app"]
