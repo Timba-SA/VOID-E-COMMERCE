@@ -2,10 +2,14 @@
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
-
-DB_URL = "postgresql+asyncpg://postgres.thoxsxpfpdsjoykzahzv:maconiaso23982719827@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from settings import settings
 
 async def check_columns():
+    # Usar la URL de la base de datos desde las variables de entorno
+    DB_URL = settings.DB_SQL_URI
+    if not DB_URL:
+        raise ValueError("❌ DB_SQL_URI no está configurada en las variables de entorno")
+    
     engine = create_async_engine(DB_URL)
     
     async with engine.connect() as conn:
