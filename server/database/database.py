@@ -4,6 +4,7 @@ import os
 from settings import settings # Para leer las URLs
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker # Importar async_sessionmaker
 from sqlalchemy import text
+from sqlalchemy.pool import NullPool
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 
@@ -53,28 +54,15 @@ def setup_database_engine():
                 connect_args["prepared_statement_cache_size"] = 0
                 connect_args["statement_cache_size"] = 0
             
-            # Configuración optimizada del pool para Celery Workers
-            # NullPool NO es bueno para workers, usar QueuePool con límites conservadores
-            pool_config = {
-                "pool_size": 5,              # Conexiones permanentes por worker
-                "max_overflow": 10,          # Conexiones adicionales en picos
-                "pool_timeout": 30,          # Timeout esperando conexión del pool
-                "pool_recycle": 300,         # Reciclar conexiones cada 5 min (evita timeouts de Supabase)
-                "pool_pre_ping": True,       # CRÍTICO: Verificar conexión antes de usar
-                "echo_pool": False,          # Logs del pool (debug)
-            }
-            
-            # Si es un worker de Celery, reducir pool_size
-            if "celery" in os.environ.get("CELERY_WORKER_NAME", "").lower():
-                pool_config["pool_size"] = 2
-                pool_config["max_overflow"] = 3
-                logger.info("🔧 Configuración de pool reducida para Celery worker")
-            
+            # Para workers de Celery: usar NullPool para evitar problemas de event loop
+            # NullPool crea una conexión nueva por cada operación y la cierra inmediatamente
+            # Esto evita compartir conexiones entre diferentes event loops
             engine = create_async_engine(
                 db_url,
+                poolclass=NullPool,  # Sin pool para evitar conflictos de event loop
                 connect_args=connect_args,
-                **pool_config
             )
+            logger.info("🔧 Usando NullPool (sin conexiones persistentes) para compatibilidad con Celery workers")
 
             AsyncSessionLocal = async_sessionmaker(
                 bind=engine,

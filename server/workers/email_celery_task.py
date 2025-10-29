@@ -149,8 +149,8 @@ async def check_and_process_emails():
                         logger.info(f"🔄 Task {email_task_id} marcado como 'processing'")
 
                         # --- Procesamiento con IA (con rate limiting) ---
-                        CONTEXT_TURNS_LIMIT = 3  # Reducido de 5 a 3 para ahorrar tokens
-                        
+                        CONTEXT_TURNS_LIMIT = 2  # Reducido de 3 a 2 para ahorrar tokens (evitar error 413)
+
                         logger.info(f"📚 Obteniendo historial de conversaciones (últimos {CONTEXT_TURNS_LIMIT} turnos)...")
                         result = await db_session.execute(
                             select(ConversacionIA)
@@ -172,11 +172,11 @@ async def check_and_process_emails():
                         # Agregar productos específicos si es búsqueda
                         if intention_analysis["primary_intention"] == "product_search":
                             logger.info(f"🔍 Búsqueda de productos específicos...")
-                            search_result = await ia_services.smart_product_search(db_session, body, limit=3)
+                            search_result = await ia_services.smart_product_search(db_session, body, limit=2)  # Reducido de 3 a 2
                             if search_result["products"]:
                                 logger.info(f"✅ {len(search_result['products'])} productos encontrados")
                                 matched_lines = ["\n--- PRODUCTOS PARA TU CONSULTA ---"]
-                                for prod in search_result["products"][:3]:
+                                for prod in search_result["products"][:2]:  # Solo 2 productos
                                     stock_info = "Sin stock"
                                     if hasattr(prod, 'variantes') and prod.variantes:
                                         total_stock = sum(v.cantidad_en_stock for v in prod.variantes if v.cantidad_en_stock)
@@ -188,7 +188,7 @@ async def check_and_process_emails():
                                         f"ID: {prod.id} | {prod.nombre} | {category} | ${prod.precio} | {stock_info}"
                                     )
                                 matched_lines.append("---")
-                                catalog = "\n".join(matched_lines) + "\n\n" + catalog[:2000]  # Limitar tamaño total
+                                catalog = "\n".join(matched_lines) + "\n\n" + catalog[:800]  # Reducido de 2000 a 800 chars
 
                         # System prompt optimizado
                         user_preferences = ia_services.analyze_user_preferences(limited_history)
@@ -355,7 +355,7 @@ def reprocess_email_task(email_task_id: int):
             # --- Lógica de IA (igual que en check_and_process_emails) ---
             sender = et.sender_email
             body = et.body
-            CONTEXT_TURNS_LIMIT = 3
+            CONTEXT_TURNS_LIMIT = 2  # Reducido de 3 a 2 para ahorrar tokens (evitar error 413)
             
             res_hist = await db_session.execute(
                 select(ConversacionIA)
@@ -369,10 +369,10 @@ def reprocess_email_task(email_task_id: int):
             catalog = await ia_services.get_enhanced_catalog_from_db(db_session, body)
 
             if intention_analysis["primary_intention"] == "product_search":
-                search_result = await ia_services.smart_product_search(db_session, body, limit=3)
+                search_result = await ia_services.smart_product_search(db_session, body, limit=2)  # Reducido de 3 a 2
                 if search_result["products"]:
                     matched_lines = ["\n--- PRODUCTOS PARA TU CONSULTA ---"]
-                    for prod in search_result["products"][:3]:
+                    for prod in search_result["products"][:2]:  # Solo 2 productos
                         stock_info = "Sin stock"
                         if hasattr(prod, 'variantes') and prod.variantes:
                             total_stock = sum(v.cantidad_en_stock for v in prod.variantes if v.cantidad_en_stock)
@@ -381,7 +381,7 @@ def reprocess_email_task(email_task_id: int):
                         category = prod.categoria.nombre if hasattr(prod, 'categoria') and prod.categoria else 'N/A'
                         matched_lines.append(f"ID: {prod.id} | {prod.nombre} | {category} | ${prod.precio} | {stock_info}")
                     matched_lines.append("---")
-                    catalog = "\n".join(matched_lines) + "\n\n" + catalog[:2000]
+                    catalog = "\n".join(matched_lines) + "\n\n" + catalog[:800]  # Reducido de 2000 a 800
 
             user_preferences = ia_services.analyze_user_preferences(limited_history)
             system_prompt = ia_services.get_enhanced_system_prompt(user_preferences, intention_analysis)
