@@ -16,6 +16,8 @@ from database.models import Producto, Base, Categoria
 from database.database import get_db_nosql
 from utils.security import get_password_hash, create_access_token
 from database.models import VarianteProducto
+from unittest.mock import AsyncMock, MagicMock
+import redis.asyncio as redis_async
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -99,6 +101,27 @@ async def override_get_db_sql(db_sql: AsyncSession):
     app.dependency_overrides[get_db] = _override_get_db
     yield
     app.dependency_overrides.pop(get_db, None)
+
+# --- Fixture para mockear Redis (rate limiting) ---
+@pytest.fixture(autouse=True)
+def mock_redis(monkeypatch):
+    """
+    Mockea Redis para que los tests no fallen cuando Redis no está disponible.
+    Esto afecta principalmente al rate limiting (slowapi).
+    """
+    # Mock para redis sincrónico (usado por slowapi/limits)
+    mock_redis_client = MagicMock()
+    mock_redis_client.ping.return_value = True
+    mock_redis_client.evalsha.return_value = 1  # Simula que el rate limit nunca se excede
+    
+    # Parcheamos la conexión Redis en limits/storage
+    def mock_get_connection(*args, **kwargs):
+        return mock_redis_client
+    
+    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: mock_redis_client)
+    monkeypatch.setattr("redis.from_url", lambda *args, **kwargs: mock_redis_client)
+    
+    return mock_redis_client
 
 # --- Fixture de cliente HTTP (Respeta Lifespan) ---
 @pytest_asyncio.fixture(scope="function")
