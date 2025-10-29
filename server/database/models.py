@@ -102,12 +102,17 @@ class EmailTask(Base):
     sender_email = Column(String(255), nullable=False, index=True)
     subject = Column(String(512), nullable=True)
     body = Column(Text, nullable=True)
-    uid = Column(String(255), nullable=True, index=True)
-    status = Column(String(50), nullable=False, default='pending')  # pending, processing, done, failed
+    uid = Column(String(255), nullable=False, unique=True, index=True)  # UNIQUE para evitar duplicados
+    status = Column(String(50), nullable=False, default='pending', index=True)  # pending, processing, done, failed, dead_letter
     attempts = Column(Integer, nullable=False, default=0)
     response = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)  # Detalles del último error
     creado_en = Column(TIMESTAMP, server_default=func.now())
     procesado_en = Column(TIMESTAMP, nullable=True)
+    last_attempt_at = Column(TIMESTAMP, nullable=True)  # Timestamp del último intento
+    
+    # Constante de clase para límite de reintentos
+    MAX_ATTEMPTS = 5
 
 # ===================================================================
 # ¡ACÁ ESTÁ LO NUEVO QUE AGREGAMOS!

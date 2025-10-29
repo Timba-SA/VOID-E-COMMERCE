@@ -2,7 +2,12 @@
 
 import logging
 import re
+import time
+import asyncio
+import hashlib
 from typing import List, Dict, Any, Optional, Tuple
+from collections import deque
+from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
@@ -12,13 +17,13 @@ import json
 from settings import settings
 from database.models import Producto, ConversacionIA, VarianteProducto
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 try:
     client = Groq(api_key=settings.GROQ_API_KEY)
 except Exception as e:
-    logger.error(f"No se pudo inicializar el cliente de Groq. ¿Falta GROQ_API_KEY en .env? Error: {e}")
+    logger.error(f"❌ No se pudo inicializar el cliente de Groq. ¿Falta GROQ_API_KEY en .env? Error: {e}")
     client = None
 
 MODEL_NAME = settings.GROQ_MODEL_NAME
@@ -27,7 +32,151 @@ class IAServiceError(Exception):
     """Excepción personalizada para errores del servicio de IA."""
     pass
 
-# --- SISTEMA DE SINÓNIMOS Y MAPEO INTELIGENTE ---
+# ===============================================
+# SISTEMA DE RATE LIMITING Y CIRCUIT BREAKER
+# ===============================================
+
+@dataclass
+class RateLimitState:
+    """Estado del rate limiter para Groq API"""
+    requests_timestamps: deque  # Últimas requests
+    is_circuit_open: bool = False  # Circuit breaker abierto?
+    circuit_opened_at: Optional[float] = None  # Cuándo se abrió
+    consecutive_errors: int = 0  # Errores consecutivos
+
+# Singleton global para compartir entre tareas
+_rate_limit_state = RateLimitState(requests_timestamps=deque(maxlen=10))
+
+# Configuración
+MAX_REQUESTS_PER_MINUTE = 8  # Dejamos margen (Groq free ~10 RPM)
+CIRCUIT_BREAKER_THRESHOLD = 3  # Errores consecutivos para abrir circuito
+CIRCUIT_BREAKER_TIMEOUT = 120  # 2 minutos de espera
+
+async def check_rate_limit() -> bool:
+    """Verifica si podemos hacer un request sin violar rate limits"""
+    now = time.time()
+    
+    # Limpiar timestamps viejos (>1 minuto)
+    while _rate_limit_state.requests_timestamps and \
+          now - _rate_limit_state.requests_timestamps[0] > 60:
+        _rate_limit_state.requests_timestamps.popleft()
+    
+    # Si el circuit breaker está abierto, verificar si ya pasó el timeout
+    if _rate_limit_state.is_circuit_open:
+        if now - _rate_limit_state.circuit_opened_at >= CIRCUIT_BREAKER_TIMEOUT:
+            logger.info("🔓 Circuit breaker cerrado, reintentando requests...")
+            _rate_limit_state.is_circuit_open = False
+            _rate_limit_state.consecutive_errors = 0
+        else:
+            remaining = CIRCUIT_BREAKER_TIMEOUT - (now - _rate_limit_state.circuit_opened_at)
+            logger.warning(f"🚫 Circuit breaker ABIERTO. Esperando {remaining:.0f}s más...")
+            return False
+    
+    # Verificar si estamos bajo el límite
+    if len(_rate_limit_state.requests_timestamps) >= MAX_REQUESTS_PER_MINUTE:
+        oldest = _rate_limit_state.requests_timestamps[0]
+        wait_time = 60 - (now - oldest)
+        if wait_time > 0:
+            logger.warning(f"⏳ Rate limit alcanzado. Esperando {wait_time:.1f}s...")
+            await asyncio.sleep(wait_time + 1)  # +1 segundo de buffer
+    
+    return True
+
+def record_api_request():
+    """Registra que hicimos un request exitoso"""
+    _rate_limit_state.requests_timestamps.append(time.time())
+    _rate_limit_state.consecutive_errors = 0  # Reset errores
+
+def record_api_error(is_rate_limit: bool = False):
+    """Registra un error de API"""
+    _rate_limit_state.consecutive_errors += 1
+    
+    if is_rate_limit or _rate_limit_state.consecutive_errors >= CIRCUIT_BREAKER_THRESHOLD:
+        _rate_limit_state.is_circuit_open = True
+        _rate_limit_state.circuit_opened_at = time.time()
+        logger.error(f"⚠️ CIRCUIT BREAKER ABIERTO tras {_rate_limit_state.consecutive_errors} errores")
+
+# ===============================================
+# SISTEMA DE CACHÉ FAQ
+# ===============================================
+
+# Caché simple en memoria (para preguntas frecuentes)
+FAQ_CACHE = {}
+
+def get_cache_key(query: str) -> str:
+    """Genera una clave de caché normalizada"""
+    normalized = query.lower().strip()
+    return hashlib.md5(normalized.encode()).hexdigest()
+
+async def get_cached_faq_response(query: str) -> Optional[str]:
+    """Busca respuestas en caché para preguntas frecuentes"""
+    cache_key = get_cache_key(query)
+    
+    # Verificar caché exacto
+    if cache_key in FAQ_CACHE:
+        logger.info(f"💾 Respuesta encontrada en caché FAQ")
+        return FAQ_CACHE[cache_key]
+    
+    # Verificar similitud con preguntas frecuentes predefinidas
+    faq_patterns = {
+        "envios": ["envio", "envíos", "envío", "shipping", "delivery", "entrega", "enviar"],
+        "pagos": ["pago", "payment", "mercadopago", "tarjeta", "efectivo", "precio", "cuesta"],
+        "cambios": ["cambio", "devolucion", "devolución", "return", "exchange", "devolver"],
+        "talles": ["talle", "size", "medida", "medidas", "sizing", "tamaño"],
+        "stock": ["stock", "disponible", "availability", "hay", "quedan", "disponibilidad"]
+    }
+    
+    faq_responses = {
+        "envios": (
+            "🚚 **Envíos:**\n"
+            "- Se coordinan al finalizar la compra\n"
+            "- Envíos a todo el país vía Correo Argentino\n"
+            "- Tiempo estimado: 3-7 días hábiles\n"
+            "- El costo se calcula según destino"
+        ),
+        "pagos": (
+            "💳 **Medios de Pago:**\n"
+            "- Aceptamos MercadoPago con todas las opciones\n"
+            "- Tarjetas de crédito/débito\n"
+            "- Efectivo en puntos de pago\n"
+            "- Hasta 12 cuotas sin interés en tarjetas seleccionadas"
+        ),
+        "cambios": (
+            "🔄 **Cambios y Devoluciones:**\n"
+            "- Tenés 30 días desde la recepción\n"
+            "- El producto debe estar sin uso y con etiquetas\n"
+            "- Los gastos de envío del cambio son a cargo del cliente\n"
+            "- Contactanos a voidindumentaria.mza@gmail.com"
+        ),
+        "talles": (
+            "📏 **Guía de Talles:**\n"
+            "- Consultá la tabla de talles en cada producto\n"
+            "- Si tenés dudas, escribinos con tus medidas\n"
+            "- Te ayudamos a elegir el talle perfecto\n"
+            "- Manejamos talles S, M, L, XL, XXL"
+        ),
+        "stock": (
+            "📦 **Consulta de Stock:**\n"
+            "- Todos los productos publicados tienen stock disponible\n"
+            "- El stock se actualiza en tiempo real\n"
+            "- Si no ves tu talle, escribinos - podríamos conseguirlo\n"
+            "- Hacemos reservas por 24hs con seña"
+        )
+    }
+    
+    query_lower = query.lower()
+    for category, keywords in faq_patterns.items():
+        if any(kw in query_lower for kw in keywords):
+            response = faq_responses[category]
+            FAQ_CACHE[cache_key] = response  # Guardar en caché
+            logger.info(f"💾 Respuesta FAQ generada para categoría '{category}'")
+            return response
+    
+    return None
+
+# ===============================================
+# SINÓNIMOS Y MAPEO INTELIGENTE
+# ===============================================
 CLOTHING_SYNONYMS = {
     "remera": ["camiseta", "playera", "polo", "shirt", "t-shirt", "tshirt"],
     "campera": ["chaqueta", "jacket", "abrigo", "chamarra", "cazadora"],
@@ -443,54 +592,113 @@ def _build_messages_for_groq(system_prompt: str, catalog_context: str, chat_hist
     return messages
 
 
-# --- ¡ACÁ ESTÁ LA MAGIA DEL REFACTOR! ---
+# ===============================================
+# FUNCIÓN PRINCIPAL DE IA CON RATE LIMITING
+# ===============================================
+
 async def get_ia_response(
     system_prompt: str,
     catalog_context: str,
-    chat_history: Optional[List[ConversacionIA]] = None, # <--- CAMBIO 2: Ahora es opcional
-    user_prompt: Optional[str] = None # <--- CAMBIO 3: Nuevo parámetro opcional
+    chat_history: Optional[List[ConversacionIA]] = None,
+    user_prompt: Optional[str] = None,
+    max_retries: int = 3
 ) -> str:
     """
-    Función principal MEJORADA para ser más flexible.
-    Puede recibir un historial de chat completo O un único prompt de usuario.
+    Función MEJORADA con:
+    - Rate limiting y circuit breaker
+    - Backoff exponencial en reintentos
+    - Detección específica de error 429
     """
     if not client:
         raise IAServiceError("El cliente de Groq no está inicializado. Revisa la API Key.")
 
-    # Usamos el historial si existe, si no, partimos de una lista vacía.
+    # Verificar rate limit ANTES de hacer el request
+    can_proceed = await check_rate_limit()
+    if not can_proceed:
+        raise IAServiceError("Circuit breaker abierto o rate limit excedido. Intenta más tarde.")
+
     history_to_use = chat_history if chat_history is not None else []
     messages = _build_messages_for_groq(system_prompt, catalog_context, history_to_use)
 
-    # <--- CAMBIO 4: Si nos pasaron un `user_prompt`, lo agregamos al final ---
-    # Esto es lo que usará tu worker de emails.
     if user_prompt:
         messages.append({"role": "user", "content": user_prompt})
 
-    # El resto de la función es exactamente igual, no se toca nada.
-    try:
-        logger.info(f"Enviando petición a Groq con el modelo {MODEL_NAME}...")
-        chat_completion = client.chat.completions.create(
-            messages=messages,
-            model=MODEL_NAME,
-            temperature=0.7,
-            max_tokens=150,
-        )
-        
-        ia_content = chat_completion.choices[0].message.content.strip()
-        
-        if ia_content:
-            logger.info("Respuesta de Groq recibida exitosamente.")
-            return ia_content
-        else:
-            logger.warning("Groq devolvió una respuesta vacía.")
-            return "Disculpá, no pude procesar tu consulta en este momento."
+    # Retry con backoff exponencial
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"🤖 Enviando petición a Groq (intento {attempt + 1}/{max_retries})...")
+            
+            chat_completion = client.chat.completions.create(
+                messages=messages,
+                model=MODEL_NAME,
+                temperature=0.7,
+                max_tokens=150,  # Limitado para reducir costo de tokens
+            )
+            
+            ia_content = chat_completion.choices[0].message.content.strip()
+            
+            if ia_content:
+                logger.info("✅ Respuesta de Groq recibida exitosamente.")
+                record_api_request()  # Registrar request exitoso
+                return ia_content
+            else:
+                logger.warning("⚠️ Groq devolvió una respuesta vacía.")
+                return "Disculpá, no pude procesar tu consulta en este momento."
 
-    except GroqError as e:
-        logger.error(f"Error específico de la API de Groq: {e}", exc_info=True)
-        raise IAServiceError(f"Error en la API de Groq: {e.status_code} - {e.message}")
-    except Exception as e:
-        logger.error(f"Error inesperado al llamar a Groq: {e}", exc_info=True)
-        raise IAServiceError(f"Error inesperado en la comunicación con el servicio de IA.")
+        except GroqError as e:
+            # Detectar si es un 429 (Rate Limit)
+            is_rate_limit = hasattr(e, 'status_code') and e.status_code == 429
+            
+            if is_rate_limit:
+                logger.error(f"⚠️ RATE LIMIT (429) en Groq API: {e}")
+                record_api_error(is_rate_limit=True)
+                
+                # Backoff exponencial: 2^attempt * 30 segundos
+                wait_time = (2 ** attempt) * 30
+                
+                if attempt < max_retries - 1:
+                    logger.info(f"⏳ Esperando {wait_time}s antes del reintento {attempt + 2}...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    # Último intento falló, lanzar error
+                    raise IAServiceError(f"Rate limit excedido tras {max_retries} intentos")
+            else:
+                # Otro tipo de GroqError
+                logger.error(f"❌ Error específico de la API de Groq: {e}", exc_info=True)
+                record_api_error(is_rate_limit=False)
+                raise IAServiceError(f"Error en la API de Groq: {getattr(e, 'status_code', 'N/A')} - {getattr(e, 'message', str(e))}")
+                
+        except Exception as e:
+            logger.error(f"❌ Error inesperado al llamar a Groq: {e}", exc_info=True)
+            record_api_error(is_rate_limit=False)
+            raise IAServiceError(f"Error inesperado en la comunicación con el servicio de IA.")
+
+async def get_ia_response_with_cache(
+    system_prompt: str,
+    catalog_context: str,
+    chat_history: Optional[List[ConversacionIA]] = None,
+    user_prompt: Optional[str] = None,
+    max_retries: int = 3
+) -> str:
+    """
+    Wrapper que primero intenta con caché FAQ, luego llama a IA
+    """
+    # Intentar respuesta de caché FAQ primero
+    if user_prompt:
+        cached_response = await get_cached_faq_response(user_prompt)
+        if cached_response:
+            logger.info("💾 Usando respuesta desde FAQ caché")
+            return cached_response
+    
+    # Si no hay caché, llamar a IA normal
+    return await get_ia_response(
+        system_prompt,
+        catalog_context,
+        chat_history,
+        user_prompt,
+        max_retries
+    )
 
 # --- NUEVAS FUNCIONES MEJORADAS ---
 
