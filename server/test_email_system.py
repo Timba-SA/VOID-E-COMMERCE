@@ -97,7 +97,7 @@ async def get_latest_order():
         return None
 
 
-async def test_email_task(order_id: int):
+async def run_email_task(order_id: int):
     """Probar enviar email para una orden especifica"""
     print("\n" + "="*80)
     print(f"🚀 PROBANDO ENVIO DE EMAIL PARA ORDEN {order_id}")
@@ -119,7 +119,7 @@ async def test_email_task(order_id: int):
         return False
 
 
-async def test_celery_task(order_id: int):
+async def run_celery_task(order_id: int):
     """Probar encolar tarea de Celery"""
     print("\n" + "="*80)
     print(f"🚀 PROBANDO ENCOLAR TAREA DE CELERY PARA ORDEN {order_id}")
@@ -170,14 +170,14 @@ async def main():
     print("\n" + "="*80)
     print("OPCION 1: Enviar email directamente (sin Celery)")
     print("="*80)
-    email_sent = await test_email_task(orden.id)
+    email_sent = await run_email_task(orden.id)
     
     # 5. Si Redis esta OK, probar con Celery
     if redis_ok:
         print("\n" + "="*80)
         print("OPCION 2: Enviar email via Celery (cola de tareas)")
         print("="*80)
-        await test_celery_task(orden.id)
+        await run_celery_task(orden.id)
     else:
         print("\n⚠️  No se puede probar Celery porque Redis no esta conectado")
     
