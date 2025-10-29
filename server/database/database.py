@@ -4,7 +4,6 @@ import os
 from settings import settings # Para leer las URLs
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker # Importar async_sessionmaker
 from sqlalchemy import text
-from sqlalchemy.pool import NullPool
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 
@@ -38,18 +37,43 @@ def setup_database_engine():
         try:
             # Configuración especial para Supabase Connection Pooler
             # Si usas el pooler (puerto 6543), necesitas desactivar prepared statements
-            connect_args = {}
-            if ":6543" in db_url:  # Detectar si estamos usando el Connection Pooler
-                logger.info("🔌 Connection Pooler detectado (puerto 6543) - desactivando prepared statements")
-                connect_args = {
-                    "prepared_statement_cache_size": 0,
-                    "statement_cache_size": 0
+            connect_args = {
+                "server_settings": {
+                    "application_name": f"void_worker_{os.getpid()}"
                 }
+            }
+            
+            # Detectar si estamos usando el Connection Pooler (puerto 6543 o 5432)
+            if ":6543" in db_url:
+                logger.info("🔌 Connection Pooler detectado (puerto 6543) - desactivando prepared statements")
+                connect_args["prepared_statement_cache_size"] = 0
+                connect_args["statement_cache_size"] = 0
+            elif ":5432" in db_url and "pooler.supabase.com" in db_url:
+                logger.info("🔌 Supabase Transaction Pooler detectado (puerto 5432) - optimizando conexiones")
+                connect_args["prepared_statement_cache_size"] = 0
+                connect_args["statement_cache_size"] = 0
+            
+            # Configuración optimizada del pool para Celery Workers
+            # NullPool NO es bueno para workers, usar QueuePool con límites conservadores
+            pool_config = {
+                "pool_size": 5,              # Conexiones permanentes por worker
+                "max_overflow": 10,          # Conexiones adicionales en picos
+                "pool_timeout": 30,          # Timeout esperando conexión del pool
+                "pool_recycle": 300,         # Reciclar conexiones cada 5 min (evita timeouts de Supabase)
+                "pool_pre_ping": True,       # CRÍTICO: Verificar conexión antes de usar
+                "echo_pool": False,          # Logs del pool (debug)
+            }
+            
+            # Si es un worker de Celery, reducir pool_size
+            if "celery" in os.environ.get("CELERY_WORKER_NAME", "").lower():
+                pool_config["pool_size"] = 2
+                pool_config["max_overflow"] = 3
+                logger.info("🔧 Configuración de pool reducida para Celery worker")
             
             engine = create_async_engine(
                 db_url,
-                poolclass=NullPool,
-                connect_args=connect_args
+                connect_args=connect_args,
+                **pool_config
             )
 
             AsyncSessionLocal = async_sessionmaker(
